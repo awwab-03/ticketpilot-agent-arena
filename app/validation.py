@@ -73,13 +73,16 @@ def check_semantics(d: AgentDecision, state: AgentState, grounding_text: str) ->
         if isinstance(value, str) and value and value.lower() not in lowered:
             v.append(f'{key} "{value}" does not appear in the request or any observation; do not invent identifiers')
 
-    needs_message = d.status != 'continue' or d.complete_on_success
-    if needs_message and not (d.user_message and d.user_message.strip()):
+    if d.status != 'continue' and not (d.user_message and d.user_message.strip()):
         v.append(f'status "{d.status}" requires a non-empty user_message')
-    if d.complete_on_success and d.status != 'continue':
-        v.append('complete_on_success is only valid with status "continue"')
-    if (d.status == 'completed' or d.complete_on_success) and d.pending_items:
-        v.append('cannot complete while pending_items is not empty')
     if d.status == 'completed' and not any(o.ok for o in state.observations):
         v.append('"completed" must be grounded in at least one successful tool observation')
     return v
+
+def normalize(d: AgentDecision) -> list[str]:
+    """Harmless inconsistencies are normalized, not rejected: complete_on_success only
+    counts for a "continue" decision with a final message and no pending work."""
+    if d.complete_on_success and (d.status != 'continue' or not (d.user_message or '').strip() or d.pending_items):
+        d.complete_on_success = False
+        return ['complete_on_success ignored (needs status continue, a user_message and no pending_items)']
+    return []

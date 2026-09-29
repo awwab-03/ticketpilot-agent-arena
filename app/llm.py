@@ -57,6 +57,16 @@ DECISION_JSON_SCHEMA = {
                  'user_requested_actions', 'pending_items', 'complete_on_success'],
 }
 
+def _retry_delay(response: httpx.Response) -> float:
+    """Seconds the provider asks us to wait (RetryInfo.retryDelay like "7s"), default 2."""
+    try:
+        for detail in response.json().get('error', {}).get('details', []):
+            if 'retryDelay' in detail:
+                return float(str(detail['retryDelay']).rstrip('s'))
+    except (ValueError, AttributeError):
+        pass
+    return 2.0
+
 class GeminiClient:
     # Optional request features dropped (per model, per process) if the API rejects them.
     _unsupported: dict[str, set[str]] = {}
@@ -102,9 +112,11 @@ class GeminiClient:
                         dropped.add('thinking'); continue
                     if 'schema' in detail and 'schema' not in dropped:
                         dropped.add('schema'); continue
-                if r.status_code in (429, 500, 502, 503, 504) and attempts < 2:
-                    await asyncio.sleep(min(1.5, max(0, deadline - perf_counter() - 1)))
-                    continue
+                if r.status_code in (429, 500, 502, 503, 504) and attempts < 3:
+                    wait = _retry_delay(r) if r.status_code == 429 else 1.0
+                    if wait < deadline - perf_counter() - 2:  # only if a retry can still finish in time
+                        await asyncio.sleep(wait)
+                        continue
                 if r.status_code != 200:
                     raise ModelUnavailable(f'provider returned HTTP {r.status_code}')
                 data = r.json()

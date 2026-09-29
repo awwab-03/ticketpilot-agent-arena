@@ -210,7 +210,8 @@ class BudgetTests(AgentTestCase):
         data = self.run_arena('Triage T-1001 and T-1002', READ_T1001,
                               D('completed', user_message='Done', pending=['T-1002']),
                               D('completed', user_message='Done', pending=['T-1002']), max_steps=3)
-        self.assertEqual(data['status'], 'contract_error')
+        self.assertEqual((data['status'], data['stop_reason']), ('budget_exceeded', 'step_budget_reached'))
+        self.assertIn('completion_deferred', [e['event'] for e in data['events']])
 
 class AutonomyTests(AgentTestCase):
     def test_refund_requires_approval(self):

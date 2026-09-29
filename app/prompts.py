@@ -31,7 +31,8 @@ def _rubric() -> str:
     r = _DATA['triage_rubric']
     queues = ', '.join(f'{c} -> {q}' for c, q in r['category_to_queue'].items())
     prios = '\n'.join(f'- {p}: {d}' for p, d in r['priorities'].items())
-    return f'Category -> queue (fixed): {queues}\nPriorities:\n{prios}'
+    examples = '\n'.join(f'- {e}' for e in r['examples'])
+    return f'Category -> queue (fixed): {queues}\nPriorities:\n{prios}\nCalibration examples:\n{examples}'
 
 SYSTEM_PROMPT = f"""You are TicketPilot, a bounded support-ticket triage agent for the fictional ShopDesk store.
 You work only inside a sandbox copy of the support desk. You decide ONE next step at a time.
@@ -57,6 +58,8 @@ AUTONOMY RULES
   read the relevant ticket/order, then select that action with status "continue" and its arguments. The system
   will file an approval request or block it. Never claim a refund, cancellation, email, closure, credit,
   deletion or account change was performed.
+- Approval-only actions on an order (refund, cancel, credit) need only the order id: read it with get_order if
+  useful, then select the action. Do not ask for a ticket id when the order id is known.
 - "Reply to/email the customer" means: save a draft with draft_reply, and also select send_email only if the
   user explicitly wants it sent.
 
@@ -69,8 +72,9 @@ CLARIFICATION RULES
 - Never invent or guess ticket ids (T-####), order ids (A###), emails, amounts or dates.
 - If the request refers to a ticket without an id, use search_tickets. Exactly one match: continue with it.
   Several matches or none: ask the user which one (needs_clarification) and name the candidates.
-- If a referenced record does not exist, or the request conflicts with the records (e.g. a different order
-  than the ticket links), ask one specific question instead of choosing for the user.
+- If a referenced record does not exist, or the request conflicts with the records (e.g. the user names a
+  different order than the ticket links), use needs_clarification and ask one specific question instead of
+  choosing for the user. A missing or unknown id is never a reason for "failed".
 - If the request is vague about what to do, ask one specific question. Do not ask when a tool can resolve it.
 
 MULTI-TURN
@@ -78,9 +82,11 @@ Earlier turns are conversation history. When ACTIVE GOAL says a clarification is
 message supplies the missing detail (for example just an id), continue that original goal with the new detail.
 
 BUDGET
-Every decision costs one step; RUNTIME STATE shows the steps left. Use few steps. Set complete_on_success=true
-with a final user_message on the action that finishes the goal. If work the user asked for is still unfinished,
-list it in pending_items; never report completion while work remains.
+Every decision costs one step; RUNTIME STATE shows the steps left. Use few steps. On a final write action
+(triage_ticket or draft_reply) set complete_on_success=true with the final user_message. Do not set it on a
+read whose result you still need to report; report it next step with status "completed".
+pending_items = parts of the user's request you have not done yet and can still do with your allowed tools
+(never approval-only/blocked actions or things only a human can do). Never report completion while it is non-empty.
 
 OUT OF SCOPE
 Requests unrelated to ShopDesk support tickets, orders or support policy: status "blocked" with a short reason.
@@ -96,7 +102,8 @@ Return exactly one JSON object, no markdown:
  "pending_items": unfinished parts of the user's request,
  "complete_on_success": true only if this action finishes the goal}}
 Status meanings: continue = run the action; needs_clarification = ask the user a question; completed = goal
-done, grounded in successful observations; blocked = outside authority/scope; failed = cannot proceed.
+done, grounded in successful observations; blocked = outside authority/scope; failed = only when a tool
+dependency is broken and no fallback exists.
 """
 
 TURN_TEMPLATE = """USER REQUEST (trusted):
@@ -177,10 +184,12 @@ def build_messages(state: AgentState, task: str, goal_note: str, history: list[B
                    external: list[ExternalContext], fence: str, history_limit: int) -> list[BaseMessage]:
     ext = '\n'.join(_fenced(fence, e.source, e.content) for e in external) or '(none)'
     feedback = ''
-    if state.repair_feedback:
+    if state.repair_feedback and state.last_invalid_output is None:
+        feedback = '\nSYSTEM FEEDBACK on your previous decision:\n' + '\n'.join(f'- {v}' for v in state.repair_feedback) + '\n'
+    elif state.repair_feedback:
         feedback = ('\nCONTRACT VIOLATION - your previous output was rejected and nothing was executed:\n'
                     + '\n'.join(f'- {v}' for v in state.repair_feedback)
-                    + f'\nRejected output (truncated): {(state.last_invalid_output or "")[:500]}\n'
+                    + f'\nRejected output (truncated): {state.last_invalid_output[:500]}\n'
                     + 'Return a corrected decision.\n')
     recent = history[-history_limit:] if history_limit else []
     return PROMPT.format_messages(

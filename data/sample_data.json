@@ -68,6 +68,17 @@
       "P2": "Money is wrong (duplicate charge, refund dispute), a delivery more than 3 days late, or a non-enterprise blocking bug.",
       "P3": "Standard problem with a workaround or low financial impact.",
       "P4": "Question or information request with no problem to fix."
-    }
+    },
+    "examples": [
+      "Password reset or login trouble with no sign of someone else accessing the account -> account, P3",
+      "Sign-in alert or login the customer did not make -> account, P1",
+      "Duplicate card charge -> billing, P2",
+      "Shipped order more than 3 days past the carrier ETA -> shipping, P2",
+      "Item arrived a little late but works -> shipping, P4 (or P3 if a complaint needs follow-up)",
+      "Damaged item, customer wants a refund -> billing, P2 (the refund itself needs approval)",
+      "Enterprise customer blocked from checkout -> technical, P1",
+      "Account deletion or privacy request -> account, P3",
+      "Invoice copy or return-policy question -> general, P4"
+    ]
   }
 }

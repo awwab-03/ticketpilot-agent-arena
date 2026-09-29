@@ -144,11 +144,16 @@ class Sandbox:
     def ticket(self, ticket_id: str) -> dict:
         ticket = self.data['tickets'].get(ticket_id)
         if ticket is None:
-            raise ToolRejected(f'ticket {ticket_id} does not exist')
+            raise ToolRejected(f'ticket {ticket_id} does not exist; ask the user to confirm the ticket id')
         return ticket
 
+_STOPWORDS = {'the', 'a', 'an', 'and', 'or', 'of', 'for', 'to', 'in', 'on', 'my', 'is', 'was', 'about', 'with',
+              'who', 'that', 'this', 'ticket', 'tickets', 'customer', 'customers', 'please', 'their', 'it', 'me',
+              'i', 'do', 'does', 'how', 'what', 'our', 'we', 'you', 'your'}
+
 def _words(text: str) -> set[str]:
-    return set(re.findall(r'[a-z0-9]+', text.lower()))
+    """Lower-cased keywords with a crude 5-letter stem, so 'charged'/'charges' match 'charge'."""
+    return {w[:5] for w in re.findall(r'[a-z0-9]+', text.lower()) if w not in _STOPWORDS}
 
 def search_tickets(sb: Sandbox, a: SearchTicketsArgs) -> dict:
     matches = []
@@ -183,7 +188,7 @@ def get_ticket(sb: Sandbox, a: TicketArgs) -> dict:
 def get_order(sb: Sandbox, a: OrderArgs) -> dict:
     o = sb.data['orders'].get(a.order_id)
     if o is None:
-        raise ToolRejected(f'order {a.order_id} does not exist')
+        raise ToolRejected(f'order {a.order_id} does not exist; ask the user to confirm the order id')
     return {'order_id': a.order_id, **o}
 
 def search_kb(sb: Sandbox, a: SearchKbArgs) -> dict:

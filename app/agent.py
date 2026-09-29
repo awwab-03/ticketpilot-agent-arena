@@ -13,7 +13,7 @@ from app.config import settings
 from app.models import AgentDecision, AgentState, ArenaRequest, ArenaResponse, Metrics, Observation, ToolTrace
 from app.prompts import build_messages, grounding_text, new_fence, resolve_goal
 from app.tools import APPROVAL_ACTIONS, APPROVAL_TOOL, BLOCKED_ACTIONS, TOOLS, Sandbox, ToolGateway
-from app.validation import check_semantics, parse_decision
+from app.validation import check_semantics, normalize, parse_decision
 
 log = logging.getLogger('agent')
 
@@ -132,9 +132,10 @@ class Run:
             violations = check_semantics(decision, s, grounding)
         if not violations:
             s.consecutive_invalid, s.repair_feedback, s.last_invalid_output = 0, [], None
+            notes = normalize(decision)
             s.event('decision', status=decision.status, action=decision.action,
                     arguments=_short(decision.arguments), valid=True,
-                    complete_on_success=decision.complete_on_success)
+                    complete_on_success=decision.complete_on_success, **({'normalized': notes} if notes else {}))
             return decision
         s.consecutive_invalid += 1
         s.errors.append({'type': 'contract_violation', 'step': s.step, 'violations': violations[:5]})
@@ -184,6 +185,13 @@ class Run:
             self.stop('blocked', 'request_out_of_scope', message)
         elif d.status == 'needs_clarification':
             self.stop('needs_clarification', 'missing_information', message)
+        elif d.status == 'completed' and d.pending_items and not self._requested(APPROVAL_ACTIONS):
+            # The model says "done" but lists unfinished work: keep working while budget remains.
+            s.event('completion_deferred', pending=d.pending_items[:5])
+            s.repair_feedback = [f'You reported completion but pending_items is not empty: {d.pending_items[:5]}. '
+                                 'Continue with that work, or remove items that need approval, are blocked, '
+                                 'or can only be done by a human.']
+            s.last_invalid_output = None
         elif d.status == 'completed':
             await self._complete(message)
         elif d.status == 'failed':
