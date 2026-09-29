@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: agent-arena-student
+    name: ticketpilot-agent-arena
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
@@ -10,4 +10,12 @@ services:
       - key: PYTHON_VERSION
         value: 3.12.10
       - key: MODEL_PROVIDER
-        value: unconfigured
+        value: gemini
+      - key: MODEL_NAME
+        value: gemini-3.1-flash-lite
+      - key: AVAILABLE_MODELS
+        value: gemini-3.1-flash-lite,gemini-3.6-flash
+      - key: GEMINI_THINKING_LEVEL
+        value: minimal
+      - key: GEMINI_API_KEY
+        sync: false

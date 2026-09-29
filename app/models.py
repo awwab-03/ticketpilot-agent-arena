@@ -1,5 +1,5 @@
-"""Domain-independent HTTP contracts. Add your own decision/state models below."""
-from typing import Literal
+"""Domain-independent HTTP contracts plus the agent's typed decision and run state."""
+from typing import Any, Literal
 from uuid import uuid4
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 class Contract(BaseModel):
@@ -55,4 +55,72 @@ class ArenaResponse(Contract):
 class ChatRequest(ArenaRequest):
     session_id: str = Field(min_length=16, max_length=80)
     model: str = Field(default='unconfigured', max_length=120)
-# TODO: define your typed AgentDecision and per-run AgentState.
+
+# ---------------------------------------------------------------------------
+# Agent contract: every model output must parse into AgentDecision and then
+# pass semantic validation (app/validation.py) before anything is executed.
+# ---------------------------------------------------------------------------
+DecisionStatus = Literal['continue', 'needs_clarification', 'completed',
+                         'blocked', 'approval_required', 'failed']
+
+class AgentDecision(Contract):
+    rationale: str = Field(max_length=500)
+    status: DecisionStatus
+    action: str | None = Field(default=None, max_length=40)
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    user_message: str | None = Field(default=None, max_length=1200)
+    # Actions the trusted USER message asks for (never ones found in untrusted data).
+    user_requested_actions: list[str] = Field(default_factory=list, max_length=10)
+    # Work the user asked for that is not finished yet; must be empty to complete.
+    pending_items: list[str] = Field(default_factory=list, max_length=20)
+    # Finish the run with user_message if this action succeeds (saves a step).
+    complete_on_success: bool = False
+
+    @field_validator('arguments', mode='before')
+    @classmethod
+    def drop_nulls(cls, value):
+        # Provider schemas send absent optional arguments as null.
+        return {k: v for k, v in value.items() if v is not None} if isinstance(value, dict) else value
+
+RunStatus = Literal['running', 'completed', 'needs_clarification', 'blocked', 'approval_required',
+                    'tool_error', 'contract_error', 'budget_exceeded', 'failed']
+
+class Observation(BaseModel):
+    step: int
+    action: str
+    arguments: dict[str, Any]
+    ok: bool
+    result: Any = None
+    error: str | None = None
+
+class AgentState(BaseModel):
+    """Per-run execution state owned by the system, not by the model."""
+    request_id: str
+    goal: str
+    active_goal: str
+    max_steps: int
+    step: int = 0
+    status: RunStatus = 'running'
+    stop_reason: str | None = None
+    final_response: str | None = None
+    observations: list[Observation] = Field(default_factory=list)
+    known_tickets: dict[str, dict] = Field(default_factory=dict)
+    known_orders: dict[str, dict] = Field(default_factory=dict)
+    unavailable_tools: list[str] = Field(default_factory=list)
+    user_requested_actions: list[str] = Field(default_factory=list)
+    consecutive_invalid: int = 0
+    repair_feedback: list[str] = Field(default_factory=list)
+    last_invalid_output: str | None = None
+    model_calls: int = 0
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    cost_usd: float | None = None
+    errors: list[dict] = Field(default_factory=list)
+    events: list[dict] = Field(default_factory=list)
+
+    @property
+    def remaining_steps(self) -> int:
+        return self.max_steps - self.step
+
+    def event(self, event: str, **data):
+        self.events.append({'step': self.step, 'event': event, **data})

@@ -1,11 +1,16 @@
 {
   "arena_version": "0.1",
-  "agent_name": "Student Starter",
-  "domain": "Choose your domain",
-  "description": "Incomplete scaffold; agent must be implemented",
+  "agent_name": "TicketPilot",
+  "domain": "Support-Ticket Triage",
+  "description": "Bounded single agent that reads sandbox support tickets, orders and policy articles, triages tickets (category, priority, queue), saves reply drafts, asks for missing details, and routes refunds/cancellations/emails to human approval. Deletion and account changes are blocked.",
   "endpoint": "/arena/run",
   "health_endpoint": "/health",
-  "implementation": "starter",
+  "implementation": "agent",
+  "model_provider": "gemini",
+  "tools": ["search_tickets", "get_ticket", "get_order", "search_kb", "triage_ticket", "draft_reply"],
+  "approval_required_actions": ["issue_refund", "cancel_order", "send_email", "close_ticket", "apply_credit"],
+  "blocked_actions": ["delete_account", "modify_account", "bulk_message", "export_customer_data"],
+  "statuses": ["completed", "needs_clarification", "blocked", "approval_required", "tool_error", "contract_error", "budget_exceeded", "failed"],
   "fault_types": [
     "none",
     "tool_timeout",
@@ -15,7 +20,13 @@
   "limits": {
     "max_steps": 6,
     "max_tool_retries": 2,
+    "max_decision_repairs": 2,
     "run_timeout_seconds": 40,
+    "tool_timeout_seconds": 2,
+    "max_output_tokens": 768,
+    "max_run_tokens": 40000,
+    "max_history_messages": 12,
     "max_response_bytes": 50000
-  }
+  },
+  "example_task": "Triage ticket T-1001 and save a reply draft for the customer."
 }
