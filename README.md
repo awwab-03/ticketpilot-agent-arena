@@ -325,6 +325,15 @@ Example Arena request:
 
 The app reads `PORT` from the host and binds `0.0.0.0`. A Dockerfile is included as an alternative.
 
+### Build the submission ZIP
+
+`git archive` packs exactly the committed files: no `.env`, `.venv`, `.git` or caches. Replace `i221234`
+with your roll number:
+
+```powershell
+git archive --format=zip --prefix=i221234/ -o ..\i221234.zip HEAD
+```
+
 ## 13. Limitations
 
 - **Free hosting:** Render free instances sleep after inactivity. The first request can take about 30–60 s
