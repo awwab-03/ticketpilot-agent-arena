@@ -118,10 +118,11 @@ class Run:
         if reply.input_tokens is not None and reply.output_tokens is not None:
             s.input_tokens = (s.input_tokens or 0) + reply.input_tokens
             s.output_tokens = (s.output_tokens or 0) + reply.output_tokens
-            cost = llm.estimate_cost(self.model, reply.input_tokens, reply.output_tokens)
+            cost = llm.estimate_cost(reply.model or self.model, reply.input_tokens, reply.output_tokens)
             s.cost_usd = None if cost is None else round((s.cost_usd or 0) + cost, 8)
-        s.event('model_call', latency_ms=round(reply.latency_ms, 1), input_tokens=reply.input_tokens,
-                output_tokens=reply.output_tokens, finish_reason=reply.finish_reason)
+        s.event('model_call', model=reply.model or self.model, latency_ms=round(reply.latency_ms, 1),
+                input_tokens=reply.input_tokens, output_tokens=reply.output_tokens,
+                finish_reason=reply.finish_reason)
         return reply.text
 
     def _validate(self, raw: str) -> AgentDecision | None:
@@ -145,6 +146,12 @@ class Run:
                       f'Stopped: the model produced {s.consecutive_invalid} invalid decisions in a row, exceeding '
                       f'the repair limit ({settings.max_decision_repairs}). Nothing unvalidated was executed. '
                       f'Completed so far: {self._progress_summary()}.')
+        elif s.step >= s.max_steps and any(o.ok for o in s.observations):
+            # Valid work was under way and the budget ran out during a repair: budget is the stop reason.
+            pending = ', '.join(self.last_pending) or 'the rest of the request'
+            self.stop('budget_exceeded', 'step_budget_reached',
+                      f'Stopped: the step budget ({s.max_steps}) ran out (the last decision was invalid and was not '
+                      f'executed). Completed so far: {self._progress_summary()}. Not finished: {pending}.')
         elif s.step >= s.max_steps:
             self.stop('contract_error', 'invalid_decision_no_budget_for_repair',
                       'Stopped: the last model decision was invalid and no step budget remained to repair it. '

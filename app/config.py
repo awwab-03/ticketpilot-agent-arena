@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     model_name: str = ''
     # Comma-separated models offered in the UI selector (must include MODEL_NAME).
     available_models: str = ''
+    # Comma-separated models tried in order when the selected model hits a quota/outage.
+    model_fallbacks: str = ''
     gemini_api_key: str = Field(default='', repr=False)
     # Gemini 3.x accepts minimal/low/medium/high; empty sends no thinking config.
     gemini_thinking_level: str = 'minimal'
@@ -46,5 +48,8 @@ class Settings(BaseSettings):
             return []
         names = [m.strip() for m in self.available_models.split(',') if m.strip()]
         return list(dict.fromkeys([self.model_name, *names]))
+
+    def fallback_models(self) -> list[str]:
+        return [m.strip() for m in self.model_fallbacks.split(',') if m.strip()]
 
 settings = Settings()

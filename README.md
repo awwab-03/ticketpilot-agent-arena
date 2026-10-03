@@ -42,7 +42,7 @@ did not request any approval-only or blocked action. Otherwise the run ends with
 | 6 | **State** | `AgentState` ([app/models.py](app/models.py)): goal, active goal, step / max_steps, status, stop_reason, observations, tickets/orders read, unavailable tools, restricted actions requested by the user, consecutive invalid decisions, repair feedback, model calls, tokens, cost, errors, events. |
 | 7 | **Autonomy boundary** | Automatic: reads, triage, drafts (sandbox). Approval: refund, cancel, send, close, credit → a `request_approval` record is filed and the run stops `approval_required`. Blocked: delete, account change, bulk message, data export → `blocked`. Restricted actions are only honoured when the *trusted user* asked for them. |
 | 8 | **Primary risks** | Invented ids; prompt injection via ticket bodies or external notes; malformed model output; tool timeouts / bad payloads; runaway loops or oversized tasks; false claims that a refund or email happened; wrong priority on a security incident. |
-| 9 | **Evaluation criteria** | Correct terminal status per public case (21 cases + 1 multi-turn), no consequential tool executed, canary text never echoed, steps ≤ max_steps, faults recorded in `errors`, model comparison on 10 inputs (success, contract validity, first-action accuracy, latency, tokens, cost), 26 offline unit tests. |
+| 9 | **Evaluation criteria** | Correct terminal status per public case (21 cases + 1 multi-turn), no consequential tool executed, canary text never echoed, steps ≤ max_steps, faults recorded in `errors`, model comparison on 10 inputs (success, contract validity, first-action accuracy, latency, tokens, cost), 28 offline unit tests. |
 
 ## 3. Architecture
 
@@ -53,7 +53,7 @@ flowchart LR
     API --> AR[arena.py<br/>timeout · admission · size cap]
     AR --> AG[agent.py<br/>bounded loop]
     AG -->|build context| PR[prompts.py<br/>layered template]
-    PR --> LLM[llm.py<br/>Gemini REST / scripted]
+    PR --> LLM[llm.py<br/>Gemini REST + fallback chain / scripted]
     LLM -->|raw text| VA[validation.py<br/>schema + semantic]
     VA -->|valid decision| GATE{autonomy gate}
     VA -->|violations| AG
@@ -94,7 +94,7 @@ agent-arena/
 │   ├── models.py       Arena contracts + AgentDecision + AgentState
 │   ├── validation.py   schema layer + semantic layer
 │   ├── prompts.py      SYSTEM policy, ChatPromptTemplate turn template, fencing, goal resolution
-│   ├── llm.py          Gemini REST client, scripted client, cost estimate
+│   ├── llm.py          Gemini REST client, quota fallback chain, scripted client, cost estimate
 │   ├── tools.py        sandbox, 6 tools with typed I/O, restricted catalogue, ToolGateway
 │   ├── memory.py       bounded LangChain HumanMessage/AIMessage history per session
 │   └── static/         index.html, app.js, style.css (demo UI)
@@ -106,7 +106,7 @@ agent-arena/
 │   ├── model_comparison.py           -> results/model_comparison.{md,json}
 │   ├── checks.py                     shared pass/fail checks
 │   └── results/                      recorded evidence
-├── tests/test_agent.py               26 offline tests (scripted model, no cost)
+├── tests/test_agent.py               28 offline tests (scripted model, no cost)
 ├── arena_manifest.json  render.yaml  Dockerfile  requirements.txt  .env.example  run.py
 └── README.md  SUBMISSION.md
 ```
@@ -158,7 +158,7 @@ payload so a malformed dependency response is detected.
 | `tool_error` | `tool_failure_unrecovered` | A tool failed on every attempt (1 + 2 retries) and the agent could not continue. |
 | `contract_error` | `invalid_decision_after_repairs` / `invalid_decision_no_budget_for_repair` | See §5. |
 | `budget_exceeded` | `step_budget_reached` / `time_budget_reached` / `token_budget_reached` | Step budget spent, <1.5 s left of the internal deadline (40 s − 3 s margin), or the run token budget reached. The message lists what was done and what is still pending. |
-| `failed` | `model_unavailable` / `model_not_configured` / `agent_cannot_proceed` / `internal_error` | Provider outage, quota or auth failure (after one bounded retry), or no model configured. |
+| `failed` | `model_unavailable` / `model_not_configured` / `agent_cannot_proceed` / `internal_error` | Provider outage, quota or auth failure on every model in the fallback chain (after bounded retries), or no model configured. |
 
 | Limit (env var) | Default | Purpose |
 |---|---|---|
@@ -172,6 +172,7 @@ payload so a malformed dependency response is detected.
 | `MAX_RUN_TOKENS` | 40 000 | Input + output tokens per run |
 | `MAX_HISTORY_MESSAGES` | 12 | Chat messages put in the prompt (6 turns) |
 | `MAX_CONCURRENT_RUNS` / `MAX_DAILY_RUNS` / `CHAT_REQUESTS_PER_MINUTE` | 4 / 2000 / 12 | Admission control so a public URL cannot run up provider cost |
+| `MODEL_FALLBACKS` | `gemini-3.1-flash-lite` | Models tried in order when the selected model returns 429/5xx |
 
 ## 7. Arena fault handling
 
@@ -252,23 +253,30 @@ Metrics: *task success*: every check passed (status, tools, forbidden actions, r
 chose an acceptable tool or status. Latency is the end-to-end run time. Cost is estimated from the provider's
 token counts × list price in [app/config.py](app/config.py) (null when unknown).
 
-**Selection: `gemini-3.1-flash-lite` (default).**
+**Selection: `gemini-3.5-flash-lite` (default), with `gemini-3.1-flash-lite` as the automatic fallback.**
 - **Reliability.** All three tiers scored 100% on task success, contract validity and first-action accuracy on
   the scored runs. A larger model bought no measurable reliability, because the contract gate, provenance check
   and autonomy gate do the safety-critical work in code. With equal quality, the bigger model's cost and quota
-  count against it.
-- **Cost.** flash-lite 3.1 is the cheapest: ≈ $0.0015 per run vs $0.0022 (3.5 flash-lite) and $0.0034 (3.6 flash),
-  about 2.3× cheaper than 3.6 flash. The whole 22-case public suite costs about 4 cents.
-- **Latency.** Average 8.2 s per run (about 4 s per decision). The worst observed run was about 12 s, far inside
-  the internal 37 s run deadline even at 6 steps. `gemini-3.5-flash-lite` is about 37% faster (5.1 s) and is the
-  fallback if latency becomes the constraint.
+  count against it, so 3.6 flash was ruled out.
+- **Latency decided between the two flash-lite tiers.** In the experiment, 3.5 flash-lite averaged 5.1 s per run
+  vs 8.2 s for 3.1 flash-lite. A re-measurement on 2026-10-04 widened the gap. Four trivial calls took
+  1.1–1.7 s on 3.5 flash-lite but 3.7–8.1 s on 3.1 flash-lite, and one live 3.1 run hit the 15 s per-call
+  timeout. Every run has a hard 37 s deadline (≤ 6 decisions), so per-call latency and its variance matter more
+  for reliability than a fraction of a cent. The public suite was re-run on the new default: **22/22**
+  ([public_results_local.md](evaluation/results/public_results_local.md)).
+- **Cost.** ≈ $0.0022 per run for 3.5 flash-lite vs $0.0015 for 3.1 flash-lite and $0.0034 for 3.6 flash. The
+  whole 22-case suite costs about 5 cents.
 - **Context window.** Prompts are about 1.6–2.5k input tokens per decision (≈ 4k per run). That's tiny compared
   with any of these models' windows, so context size didn't decide anything; the bounded history (12 messages)
   and truncated observations keep it that way.
-- **Quota.** Only the flash-lite tiers have enough free-tier headroom for a public evaluation. 3.6 flash hit its
-  20-requests/day cap during this experiment.
+- **Quota → fallback chain.** Free-tier keys have per-minute and per-day limits *per model* (3.6 flash: 20
+  requests/day), and the fast public suite does trigger HTTP 429 on 3.5 flash-lite. `MODEL_FALLBACKS` therefore
+  routes a call that gets 429/5xx to `gemini-3.1-flash-lite`. That model has a separate quota and was equally
+  accurate. The throttled model is skipped for its `retryDelay` cooldown ([app/llm.py](app/llm.py),
+  `FallbackClient`). In the final suite run, 9 of 48 model calls were served by the fallback, and no case failed
+  with `model_unavailable`.
 
-The UI selector also offers `gemini-3.5-flash-lite` and `gemini-3.6-flash` (allow-listed via `AVAILABLE_MODELS`).
+The UI selector also offers `gemini-3.1-flash-lite` and `gemini-3.6-flash` (allow-listed via `AVAILABLE_MODELS`).
 
 **Cost controls per run:** ≤6 decisions, ≤768 output tokens each (thinking at `minimal`), ≤12 history messages,
 ≤40 000 tokens total, ≤2 repairs and ≤2 tool retries, 15 s per model call, 40 s per run. Admission control on top
@@ -276,9 +284,10 @@ of that: 4 concurrent runs, 2 000 runs per day, 12 chat requests per minute per 
 
 ## 10. Evaluation evidence
 
-- **Offline unit tests (free, deterministic):** `tests/test_agent.py`, 26 tests with a scripted model. They cover
+- **Offline unit tests (free, deterministic):** `tests/test_agent.py`, 28 tests with a scripted model. They cover
   the HTTP contract, memory bounds and isolation, happy path, all six Arena categories, unrecoverable tool failure,
-  multi-turn clarification with goal carry-over, and the Gemini client request/fallback/usage parsing.
+  multi-turn clarification with goal carry-over, the Gemini client request/fallback/usage parsing, and the
+  quota fallback chain with cooldown.
 - **Public cases against the live model:** [evaluation/results/public_results_local.md](evaluation/results/public_results_local.md).
 - **Deployed endpoint verification:** [evaluation/results/public_results_deployed.md](evaluation/results/public_results_deployed.md).
 - **Model comparison:** [evaluation/results/model_comparison.md](evaluation/results/model_comparison.md).
@@ -318,8 +327,9 @@ Example Arena request:
    - Build: `pip install -r requirements.txt`
    - Start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1`
    - Health check path: `/health`
-3. Environment: `PYTHON_VERSION=3.12.10`, `MODEL_PROVIDER=gemini`, `MODEL_NAME=gemini-3.1-flash-lite`,
-   `AVAILABLE_MODELS=gemini-3.1-flash-lite,gemini-3.5-flash-lite,gemini-3.6-flash`, and **`GEMINI_API_KEY` as a secret**. Never commit it.
+3. Environment: `PYTHON_VERSION=3.12.10`, `MODEL_PROVIDER=gemini`, `MODEL_NAME=gemini-3.5-flash-lite`,
+   `AVAILABLE_MODELS=gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.6-flash`,
+   `MODEL_FALLBACKS=gemini-3.1-flash-lite`, and **`GEMINI_API_KEY` as a secret**. Never commit it.
 4. Verify from outside: open `/` in a private window, `GET /health`, `GET /arena/manifest`, and a
    `POST /arena/run` through `/docs`; then run `run_public_tests.py --url https://<app>.onrender.com --label deployed`.
 
@@ -338,8 +348,10 @@ git archive --format=zip --prefix=i221234/ -o ..\i221234.zip HEAD
 
 - **Free hosting:** Render free instances sleep after inactivity. The first request can take about 30–60 s
   (cold start), and memory is wiped on restart.
-- **Provider quotas:** Gemini free-tier rate and daily limits can return 429. The client retries once, then
-  stops with `failed / model_unavailable`. A paid key (≈ $0.0005 per run with flash-lite) avoids this during evaluation.
+- **Provider quotas:** Gemini free-tier rate and daily limits can return 429. The fallback model absorbs short
+  bursts, but if every model in the chain is throttled, the run stops with `failed / model_unavailable`. Runs
+  served by the slower fallback can also end `budget_exceeded / time_budget_reached` on long tasks. A key with
+  billing enabled (≈ $0.002 per run) avoids both during evaluation.
 - **Model judgement:** priority/category quality and injection resistance still depend on the model. The code
   guarantees safety properties (nothing consequential executes, ids are grounded, no ungrounded completion), not
   perfect triage.

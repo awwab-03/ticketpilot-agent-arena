@@ -213,6 +213,11 @@ class BudgetTests(AgentTestCase):
         self.assertEqual((data['status'], data['stop_reason']), ('budget_exceeded', 'step_budget_reached'))
         self.assertIn('completion_deferred', [e['event'] for e in data['events']])
 
+    def test_invalid_last_decision_after_progress_is_a_budget_stop(self):
+        data = self.run_arena('Triage T-1001 and every other open ticket', READ_T1001, 'not json', max_steps=2)
+        self.assertEqual((data['status'], data['stop_reason']), ('budget_exceeded', 'step_budget_reached'))
+        self.assertEqual(data['errors'][-1]['type'], 'contract_violation')
+
 class AutonomyTests(AgentTestCase):
     def test_refund_requires_approval(self):
         data = self.run_arena('Refund order A103 in full',
@@ -289,6 +294,33 @@ class GeminiClientTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((reply.input_tokens, reply.output_tokens), (1200, 65))
         self.assertEqual(parse_decision(reply.text)[1], [])
         self.assertAlmostEqual(llm.estimate_cost('gemini-3.1-flash-lite', 1000000, 0), 0.25)
+
+class FallbackClientTests(unittest.IsolatedAsyncioTestCase):
+    async def test_quota_error_moves_to_next_model_and_cools_down(self):
+        import httpx
+        from langchain_core.messages import HumanMessage, SystemMessage
+        hits = []
+        def handler(request):
+            model = request.url.path.split('/')[-1].split(':')[0]
+            hits.append(model)
+            if model == 'primary':
+                return httpx.Response(429, json={'error': {'details': [{'retryDelay': '30s'}]}})
+            return httpx.Response(200, json={'candidates': [{'content': {'parts': [{'text': '{}'}]}}],
+                                             'usageMetadata': {'promptTokenCount': 1, 'candidatesTokenCount': 1}})
+        real = httpx.AsyncClient
+        llm.httpx.AsyncClient = lambda **kw: real(transport=httpx.MockTransport(handler))
+        llm.FallbackClient._cooldown_until.clear()
+        client = llm.FallbackClient([llm.GeminiClient('primary', 'k', wait_on_quota=False),
+                                     llm.GeminiClient('backup', 'k')])
+        msgs = [SystemMessage(content='s'), HumanMessage(content='h')]
+        try:
+            first = await client.complete(msgs, timeout=5)
+            second = await client.complete(msgs, timeout=5)
+        finally:
+            llm.httpx.AsyncClient = real
+            llm.FallbackClient._cooldown_until.clear()
+        self.assertEqual((first.model, second.model), ('backup', 'backup'))
+        self.assertEqual(hits, ['primary', 'backup', 'backup'])  # primary skipped while cooling down
 
 if __name__ == '__main__':
     unittest.main()

@@ -16,7 +16,7 @@ from app.models import ArenaRequest
 from checks import check_case, decision_stats, dumps, first_action
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--models', default='gemini-3.1-flash-lite,gemini-3.6-flash')
+parser.add_argument('--models', default='gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.6-flash')
 parser.add_argument('--repeats', type=int, default=1)
 parser.add_argument('--append', action='store_true', help='merge into the existing results file')
 parser.add_argument('--pause', type=float, default=6, help='seconds between runs (free-tier rate limits)')

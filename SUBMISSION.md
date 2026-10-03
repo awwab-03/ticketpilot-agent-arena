@@ -17,10 +17,10 @@
 - **API documentation:** TODO https://YOUR-APP.onrender.com/docs
 
 - **Hosting provider:** Render (free web service, 1 worker)
-- **Default model / provider:** gemini-3.1-flash-lite / Google Gemini API
-- **Other available models:** gemini-3.5-flash-lite, gemini-3.6-flash (UI selector)
+- **Default model / provider:** gemini-3.5-flash-lite / Google Gemini API (automatic fallback to gemini-3.1-flash-lite on quota/outage)
+- **Other available models:** gemini-3.1-flash-lite, gemini-3.6-flash (UI selector)
 - **Example input:** `{"task": "Triage ticket T-1001.", "external_context": [], "arena_config": {"max_steps": 6, "fault": "none"}}`
-- **Expected result:** `completed / goal_completed` in 2 steps. `get_ticket` then `triage_ticket`, with T-1001 set to billing, P2, queue billing.
+- **Expected result:** `completed / goal_completed` in 2–3 steps. `get_ticket` then `triage_ticket`, with T-1001 set to billing, P2, queue billing.
 - **Cold-start / restart limitations:** The Render free instance sleeps after about 15 minutes idle, so the first request can take about 30–60 s. Chat history is in memory (one worker) and is lost on restart or redeploy. Arena runs are stateless, and each run uses a fresh sandbox copy of the sample data.
 - **Repository access:** TODO instructor invited (pending / accepted)
 - **Public test results:** `evaluation/results/public_results_local.md` (local, 22/22) and `evaluation/results/public_results_deployed.md` (deployed); model comparison in `evaluation/results/model_comparison.md`

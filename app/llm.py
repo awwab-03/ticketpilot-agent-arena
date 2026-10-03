@@ -1,8 +1,10 @@
 """Model boundary. The agent sees one interface: complete(messages) -> ModelReply.
 
 GeminiClient calls the Gemini REST API (generateContent) with JSON output, a
-response schema and a hard max-output-token cap. ScriptedClient replays fixed
-outputs so the whole agent can be tested offline without cost.
+response schema and a hard max-output-token cap. FallbackClient chains models:
+each Gemini model has its own quota, so a 429/5xx on the primary model moves the
+call to the next one, and a model that returned 429 is skipped for its cooldown.
+ScriptedClient replays fixed outputs so the agent can be tested offline at no cost.
 """
 import asyncio
 import json
@@ -23,9 +25,13 @@ class ModelReply:
     output_tokens: int | None = None
     latency_ms: float = 0.0
     finish_reason: str | None = None
+    model: str | None = None  # the model that actually answered
 
 class ModelUnavailable(Exception):
     """The provider could not produce a reply (auth, quota, outage, timeout)."""
+    def __init__(self, message: str, retry_after: float | None = None):
+        super().__init__(message)
+        self.retry_after = retry_after  # set for quota (429) errors
 
 class ModelClient(Protocol):
     name: str
@@ -71,8 +77,9 @@ class GeminiClient:
     # Optional request features dropped (per model, per process) if the API rejects them.
     _unsupported: dict[str, set[str]] = {}
 
-    def __init__(self, name: str, api_key: str):
+    def __init__(self, name: str, api_key: str, wait_on_quota: bool = True):
         self.name, self._key = name, api_key
+        self.wait_on_quota = wait_on_quota  # False when a fallback model can take over instead
 
     def _body(self, messages: list[BaseMessage]) -> dict:
         system = '\n\n'.join(str(m.content) for m in messages if isinstance(m, SystemMessage))
@@ -112,13 +119,16 @@ class GeminiClient:
                         dropped.add('thinking'); continue
                     if 'schema' in detail and 'schema' not in dropped:
                         dropped.add('schema'); continue
+                if r.status_code == 429 and not self.wait_on_quota:
+                    raise ModelUnavailable('provider returned HTTP 429', retry_after=_retry_delay(r))
                 if r.status_code in (429, 500, 502, 503, 504) and attempts < 3:
                     wait = _retry_delay(r) if r.status_code == 429 else 1.0
                     if wait < deadline - perf_counter() - 2:  # only if a retry can still finish in time
                         await asyncio.sleep(wait)
                         continue
                 if r.status_code != 200:
-                    raise ModelUnavailable(f'provider returned HTTP {r.status_code}')
+                    retry_after = _retry_delay(r) if r.status_code == 429 else None
+                    raise ModelUnavailable(f'provider returned HTTP {r.status_code}', retry_after=retry_after)
                 data = r.json()
                 break
         candidate = (data.get('candidates') or [{}])[0]
@@ -130,7 +140,30 @@ class GeminiClient:
             out += usage.get('thoughtsTokenCount') or 0
         return ModelReply(text=text, input_tokens=usage.get('promptTokenCount'), output_tokens=out,
                           latency_ms=(perf_counter() - started) * 1000,
-                          finish_reason=candidate.get('finishReason'))
+                          finish_reason=candidate.get('finishReason'), model=self.name)
+
+class FallbackClient:
+    """Primary model first; on quota/outage errors, the next model in the chain."""
+    _cooldown_until: dict[str, float] = {}  # model -> perf_counter time its quota should be back
+
+    def __init__(self, clients: list[GeminiClient]):
+        self.clients, self.name = clients, clients[0].name
+
+    async def complete(self, messages: list[BaseMessage], timeout: float) -> ModelReply:
+        deadline = perf_counter() + timeout
+        ready = [c for c in self.clients if self._cooldown_until.get(c.name, 0) <= perf_counter()]
+        errors = []
+        for client in ready or self.clients[-1:]:
+            remaining = deadline - perf_counter()
+            if remaining <= 1:
+                break
+            try:
+                return await client.complete(messages, timeout=remaining)
+            except ModelUnavailable as exc:
+                errors.append(f'{client.name}: {exc}')
+                if exc.retry_after is not None:
+                    self._cooldown_until[client.name] = perf_counter() + min(exc.retry_after, 60)
+        raise ModelUnavailable('; '.join(errors) or 'all models are cooling down after quota errors')
 
 class ScriptedClient:
     """Deterministic stand-in for tests: each call returns the next scripted output."""
@@ -155,6 +188,10 @@ client_override: Callable[[str], ModelClient] | None = None
 def get_client(model: str) -> ModelClient | None:
     if client_override is not None:
         return client_override(model)
-    if model in settings.models():
+    if model not in settings.models():
+        return None
+    chain = list(dict.fromkeys([model, *settings.fallback_models()]))
+    if len(chain) == 1:
         return GeminiClient(model, settings.gemini_api_key)
-    return None
+    return FallbackClient([GeminiClient(m, settings.gemini_api_key, wait_on_quota=(i == len(chain) - 1))
+                           for i, m in enumerate(chain)])
