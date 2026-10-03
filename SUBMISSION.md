@@ -1,14 +1,14 @@
 # Submission summary — Agentic AI Assignment 1 (Agent Arena)
 
-- **Full name:** TODO
-- **Roll number:** TODO (lowercase, e.g. i221234)
-- **Class / section:** TODO
+- **Full name:** Awwab Aamir
+- **Roll number:** i220971 (22i-0971)
+- **Class / section:** C
 - **University email:** TODO
 - **GitHub username:** awwab-03
 - **Agent name:** TicketPilot
 - **Domain:** Support-Ticket Triage (domain menu #11)
 
-- **GitHub repository URL:** TODO https://github.com/awwab-03/REPOSITORY
+- **GitHub repository URL:** https://github.com/awwab-03/ticketpilot-agent-arena
 - **Final commit hash:** TODO (output of `git rev-parse HEAD`)
 - **Working agent interface:** TODO https://YOUR-APP.onrender.com/
 - **Health endpoint (GET):** TODO https://YOUR-APP.onrender.com/health
@@ -25,4 +25,4 @@
 - **Repository access:** TODO instructor invited (pending / accepted)
 - **Public test results:** `evaluation/results/public_results_local.md` (local, 22/22) and `evaluation/results/public_results_deployed.md` (deployed); model comparison in `evaluation/results/model_comparison.md`
 
-Submit `<roll>.zip` (one top-level `<roll>/` folder containing this file) and `<roll>_submission.pdf` in Google Classroom, then click **Turn in**.
+Submit `i220971.zip` (one top-level `i220971/` folder containing this file) and `i220971_submission.pdf` in Google Classroom, then click **Turn in**.
