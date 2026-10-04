@@ -22,7 +22,7 @@
 - **Example input:** `{"task": "Triage ticket T-1001.", "external_context": [], "arena_config": {"max_steps": 6, "fault": "none"}}`
 - **Expected result:** `completed / goal_completed` in 2–3 steps. `get_ticket` then `triage_ticket`, with T-1001 set to billing, P2, queue billing.
 - **Cold-start / restart limitations:** The Render free instance sleeps after about 15 minutes idle, so the first request can take about 30–60 s. Chat history is in memory (one worker) and is lost on restart or redeploy. Arena runs are stateless, and each run uses a fresh sandbox copy of the sample data.
-- **Repository access:** Repository is private. The instructor invite is pending: it will be sent as soon as the instructor's GitHub username is available, and confirmed with a private comment on the Classroom assignment.
+- **Repository access:** Private repository; instructor access is granted as a GitHub collaborator.
 - **Public test results:** `evaluation/results/public_results_local.md` (local, 22/22) and `evaluation/results/public_results_deployed.md` (deployed, 22/22); model comparison in `evaluation/results/model_comparison.md`
 
 Submit `i220971.zip` (one top-level `i220971/` folder containing this file) and `i220971_submission.pdf` in Google Classroom, then click **Turn in**.
