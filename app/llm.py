@@ -76,10 +76,13 @@ def _retry_delay(response: httpx.Response) -> float:
 class GeminiClient:
     # Optional request features dropped (per model, per process) if the API rejects them.
     _unsupported: dict[str, set[str]] = {}
+    # Thinking level actually accepted by each model (some reject "minimal" but accept "low").
+    _thinking: dict[str, str] = {}
 
-    def __init__(self, name: str, api_key: str, wait_on_quota: bool = True):
+    def __init__(self, name: str, api_key: str, retry_transient: bool = True):
         self.name, self._key = name, api_key
-        self.wait_on_quota = wait_on_quota  # False when a fallback model can take over instead
+        # False inside a fallback chain: hand a 429/5xx to the next model instead of waiting.
+        self.retry_transient = retry_transient
 
     def _body(self, messages: list[BaseMessage]) -> dict:
         system = '\n\n'.join(str(m.content) for m in messages if isinstance(m, SystemMessage))
@@ -90,8 +93,9 @@ class GeminiClient:
         dropped = self._unsupported.setdefault(self.name, set())
         if 'schema' not in dropped:
             config['responseJsonSchema'] = DECISION_JSON_SCHEMA
-        if settings.gemini_thinking_level and 'thinking' not in dropped:
-            config['thinkingConfig'] = {'thinkingLevel': settings.gemini_thinking_level}
+        level = self._thinking.get(self.name, settings.gemini_thinking_level)
+        if level and 'thinking' not in dropped:
+            config['thinkingConfig'] = {'thinkingLevel': level}
         return {'systemInstruction': {'parts': [{'text': system}]}, 'contents': contents,
                 'generationConfig': config}
 
@@ -116,11 +120,16 @@ class GeminiClient:
                     detail = r.text.lower()
                     dropped = self._unsupported.setdefault(self.name, set())
                     if 'thinking' in detail and 'thinking' not in dropped:
-                        dropped.add('thinking'); continue
+                        if self._thinking.get(self.name, settings.gemini_thinking_level) == 'minimal':
+                            self._thinking[self.name] = 'low'  # next-cheapest level
+                        else:
+                            dropped.add('thinking')
+                        continue
                     if 'schema' in detail and 'schema' not in dropped:
                         dropped.add('schema'); continue
-                if r.status_code == 429 and not self.wait_on_quota:
-                    raise ModelUnavailable('provider returned HTTP 429', retry_after=_retry_delay(r))
+                if r.status_code in (429, 500, 502, 503, 504) and not self.retry_transient:
+                    raise ModelUnavailable(f'provider returned HTTP {r.status_code}',
+                                           retry_after=_retry_delay(r) if r.status_code == 429 else 5.0)
                 if r.status_code in (429, 500, 502, 503, 504) and attempts < 3:
                     wait = _retry_delay(r) if r.status_code == 429 else 1.0
                     if wait < deadline - perf_counter() - 2:  # only if a retry can still finish in time
@@ -151,19 +160,25 @@ class FallbackClient:
 
     async def complete(self, messages: list[BaseMessage], timeout: float) -> ModelReply:
         deadline = perf_counter() + timeout
-        ready = [c for c in self.clients if self._cooldown_until.get(c.name, 0) <= perf_counter()]
         errors = []
-        for client in ready or self.clients[-1:]:
-            remaining = deadline - perf_counter()
-            if remaining <= 1:
-                break
-            try:
-                return await client.complete(messages, timeout=remaining)
-            except ModelUnavailable as exc:
-                errors.append(f'{client.name}: {exc}')
-                if exc.retry_after is not None:
-                    self._cooldown_until[client.name] = perf_counter() + min(exc.retry_after, 60)
-        raise ModelUnavailable('; '.join(errors) or 'all models are cooling down after quota errors')
+        while True:
+            now = perf_counter()
+            ready = [c for c in self.clients if self._cooldown_until.get(c.name, 0) <= now]
+            for client in ready:
+                remaining = deadline - perf_counter()
+                if remaining <= 1:
+                    break
+                try:
+                    return await client.complete(messages, timeout=remaining)
+                except ModelUnavailable as exc:
+                    errors.append(f'{client.name}: {exc}')
+                    if exc.retry_after is not None:
+                        self._cooldown_until[client.name] = perf_counter() + min(exc.retry_after, 60)
+            # Every model is throttled: wait for the first quota to return if a call can still fit.
+            soonest = min(self._cooldown_until.get(c.name, 0) for c in self.clients)
+            if soonest + 6 > deadline:
+                raise ModelUnavailable('; '.join(errors[-4:]) or 'all models are cooling down after quota errors')
+            await asyncio.sleep(max(0.0, soonest - perf_counter()))
 
 class ScriptedClient:
     """Deterministic stand-in for tests: each call returns the next scripted output."""
@@ -193,5 +208,4 @@ def get_client(model: str) -> ModelClient | None:
     chain = list(dict.fromkeys([model, *settings.fallback_models()]))
     if len(chain) == 1:
         return GeminiClient(model, settings.gemini_api_key)
-    return FallbackClient([GeminiClient(m, settings.gemini_api_key, wait_on_quota=(i == len(chain) - 1))
-                           for i, m in enumerate(chain)])
+    return FallbackClient([GeminiClient(m, settings.gemini_api_key, retry_transient=False) for m in chain])

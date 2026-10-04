@@ -17,7 +17,7 @@
 - **API documentation:** TODO https://YOUR-APP.onrender.com/docs
 
 - **Hosting provider:** Render (free web service, 1 worker)
-- **Default model / provider:** gemini-3.5-flash-lite / Google Gemini API (automatic fallback to gemini-3.1-flash-lite on quota/outage)
+- **Default model / provider:** gemini-3.5-flash-lite / Google Gemini API (free tier; on 429/5xx it falls back to gemini-3.1-flash-lite → gemini-3.7-flash → gemini-3.8-flash, each with its own quota)
 - **Other available models:** gemini-3.1-flash-lite, gemini-3.6-flash (UI selector)
 - **Example input:** `{"task": "Triage ticket T-1001.", "external_context": [], "arena_config": {"max_steps": 6, "fault": "none"}}`
 - **Expected result:** `completed / goal_completed` in 2–3 steps. `get_ticket` then `triage_ticket`, with T-1001 set to billing, P2, queue billing.

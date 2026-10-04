@@ -282,15 +282,19 @@ class GeminiClientTests(unittest.IsolatedAsyncioTestCase):
         real = httpx.AsyncClient
         llm.httpx.AsyncClient = lambda **kw: real(transport=httpx.MockTransport(handler))
         llm.GeminiClient._unsupported.pop('gemini-test', None)
+        llm.GeminiClient._thinking.pop('gemini-test', None)
         try:
             reply = await llm.GeminiClient('gemini-test', 'k').complete(
                 [SystemMessage(content='sys'), HumanMessage(content='hi')], timeout=5)
         finally:
             llm.httpx.AsyncClient = real
-        self.assertEqual(len(seen), 2)  # first rejected for thinking config, retried without it
+        self.assertEqual(len(seen), 3)  # minimal rejected -> low rejected -> no thinking config
+        self.assertEqual(seen[0]['generationConfig']['thinkingConfig'], {'thinkingLevel': 'minimal'})
+        self.assertEqual(seen[1]['generationConfig']['thinkingConfig'], {'thinkingLevel': 'low'})
+        self.assertNotIn('thinkingConfig', seen[2]['generationConfig'])
         self.assertEqual(seen[0]['systemInstruction']['parts'][0]['text'], 'sys')
         self.assertEqual(seen[0]['generationConfig']['responseMimeType'], 'application/json')
-        self.assertIn('responseJsonSchema', seen[1]['generationConfig'])
+        self.assertIn('responseJsonSchema', seen[2]['generationConfig'])
         self.assertEqual((reply.input_tokens, reply.output_tokens), (1200, 65))
         self.assertEqual(parse_decision(reply.text)[1], [])
         self.assertAlmostEqual(llm.estimate_cost('gemini-3.1-flash-lite', 1000000, 0), 0.25)
@@ -310,8 +314,8 @@ class FallbackClientTests(unittest.IsolatedAsyncioTestCase):
         real = httpx.AsyncClient
         llm.httpx.AsyncClient = lambda **kw: real(transport=httpx.MockTransport(handler))
         llm.FallbackClient._cooldown_until.clear()
-        client = llm.FallbackClient([llm.GeminiClient('primary', 'k', wait_on_quota=False),
-                                     llm.GeminiClient('backup', 'k')])
+        client = llm.FallbackClient([llm.GeminiClient('primary', 'k', retry_transient=False),
+                                     llm.GeminiClient('backup', 'k', retry_transient=False)])
         msgs = [SystemMessage(content='s'), HumanMessage(content='h')]
         try:
             first = await client.complete(msgs, timeout=5)

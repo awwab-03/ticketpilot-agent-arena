@@ -1,7 +1,7 @@
 {
   "url": "http://127.0.0.1:8000",
   "label": "local",
-  "run_at": "2026-10-03 19:27 UTC",
+  "run_at": "2026-10-04 12:46 UTC",
   "model": "gemini-3.5-flash-lite",
   "health": {
     "status": "ok",
@@ -20,18 +20,18 @@
       "problems": [],
       "status": "completed",
       "stop_reason": "goal_completed",
-      "steps": 2,
+      "steps": 3,
       "tools": [
         "get_ticket:success",
         "triage_ticket:success"
       ],
-      "final_response": "Triaging ticket T-1001 as billing, P2, queue billing.",
+      "final_response": "Ticket T-1001 has been successfully triaged as category 'billing', priority 'P2', in the 'billing' queue.",
       "metrics": {
-        "latency_ms": 4182.273500002339,
-        "model_calls": 2,
-        "input_tokens": 4185,
-        "output_tokens": 348,
-        "estimated_cost_usd": 0.0021255
+        "latency_ms": 6543.909399999393,
+        "model_calls": 3,
+        "input_tokens": 6522,
+        "output_tokens": 459,
+        "estimated_cost_usd": 0.0031041
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -48,9 +48,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1625.3,
+          "latency_ms": 1704.3,
           "input_tokens": 1991,
-          "output_tokens": 148,
+          "output_tokens": 152,
           "finish_reason": "STOP"
         },
         {
@@ -77,9 +77,9 @@
           "step": 2,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1744.0,
-          "input_tokens": 2194,
-          "output_tokens": 200,
+          "latency_ms": 1842.4,
+          "input_tokens": 2200,
+          "output_tokens": 186,
           "finish_reason": "STOP"
         },
         {
@@ -87,9 +87,12 @@
           "event": "decision",
           "status": "continue",
           "action": "triage_ticket",
-          "arguments": "{\"ticket_id\": \"T-1001\", \"category\": \"billing\", \"priority\": \"P2\", \"queue\": \"billing\", \"reason\": \"Customer reports a duplicate card charge for order A102.\"}",
+          "arguments": "{\"ticket_id\": \"T-1001\", \"category\": \"billing\", \"priority\": \"P2\", \"queue\": \"billing\", \"reason\": \"Customer reports being charged twice for order A102.\"}",
           "valid": true,
-          "complete_on_success": true
+          "complete_on_success": false,
+          "normalized": [
+            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
+          ]
         },
         {
           "step": 2,
@@ -103,7 +106,28 @@
           "observation": "{\"ticket_id\": \"T-1001\", \"category\": \"billing\", \"priority\": \"P2\", \"queue\": \"billing\", \"saved\": true}"
         },
         {
-          "step": 2,
+          "step": 3,
+          "event": "model_call",
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 1996.7,
+          "input_tokens": 2331,
+          "output_tokens": 121,
+          "finish_reason": "STOP"
+        },
+        {
+          "step": 3,
+          "event": "decision",
+          "status": "completed",
+          "action": null,
+          "arguments": "{}",
+          "valid": true,
+          "complete_on_success": false,
+          "normalized": [
+            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
+          ]
+        },
+        {
+          "step": 3,
           "event": "agent_stop",
           "status": "completed",
           "reason": "goal_completed"
@@ -123,11 +147,11 @@
       ],
       "final_response": "According to our return policy, items can be returned within 30 days of delivery. Return shipping is free for damaged items; otherwise, the customer pays return shipping.",
       "metrics": {
-        "latency_ms": 4503.314699999464,
+        "latency_ms": 3630.8680000001914,
         "model_calls": 2,
-        "input_tokens": 4218,
-        "output_tokens": 270,
-        "estimated_cost_usd": 0.0019404
+        "input_tokens": 4216,
+        "output_tokens": 262,
+        "estimated_cost_usd": 0.0019198
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -144,7 +168,7 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 2280.3,
+          "latency_ms": 1456.5,
           "input_tokens": 2005,
           "output_tokens": 121,
           "finish_reason": "STOP"
@@ -173,9 +197,9 @@
           "step": 2,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1554.3,
-          "input_tokens": 2213,
-          "output_tokens": 149,
+          "latency_ms": 1417.0,
+          "input_tokens": 2211,
+          "output_tokens": 141,
           "finish_reason": "STOP"
         },
         {
@@ -211,13 +235,13 @@
         "triage_ticket:success",
         "draft_reply:success"
       ],
-      "final_response": "Ticket T-1002 has been triaged as category shipping, priority P2 in the logistics queue, and a reply draft stating that a carrier trace has been opened has been successfully saved.",
+      "final_response": "Ticket T-1002 has been triaged as shipping (P2, logistics) and a reply draft stating we opened a carrier trace has been successfully saved.",
       "metrics": {
-        "latency_ms": 8343.105900006776,
+        "latency_ms": 9151.453200000105,
         "model_calls": 4,
-        "input_tokens": 9032,
-        "output_tokens": 748,
-        "estimated_cost_usd": 0.0045796
+        "input_tokens": 9029,
+        "output_tokens": 674,
+        "estimated_cost_usd": 0.0043937
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -234,9 +258,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1521.5,
+          "latency_ms": 1523.6,
           "input_tokens": 2006,
-          "output_tokens": 161,
+          "output_tokens": 145,
           "finish_reason": "STOP"
         },
         {
@@ -263,9 +287,9 @@
           "step": 2,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 2144.9,
+          "latency_ms": 1734.3,
           "input_tokens": 2205,
-          "output_tokens": 226,
+          "output_tokens": 180,
           "finish_reason": "STOP"
         },
         {
@@ -273,7 +297,7 @@
           "event": "decision",
           "status": "continue",
           "action": "triage_ticket",
-          "arguments": "{\"ticket_id\": \"T-1002\", \"category\": \"shipping\", \"priority\": \"P2\", \"queue\": \"logistics\", \"reason\": \"Package is 3 days past the carrier ETA.\"}",
+          "arguments": "{\"ticket_id\": \"T-1002\", \"category\": \"shipping\", \"priority\": \"P2\", \"queue\": \"logistics\", \"reason\": \"Package is 3 days past the estimated delivery date.\"}",
           "valid": true,
           "complete_on_success": false
         },
@@ -292,9 +316,9 @@
           "step": 3,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1719.8,
-          "input_tokens": 2336,
-          "output_tokens": 208,
+          "latency_ms": 2320.9,
+          "input_tokens": 2337,
+          "output_tokens": 200,
           "finish_reason": "STOP"
         },
         {
@@ -302,7 +326,7 @@
           "event": "decision",
           "status": "continue",
           "action": "draft_reply",
-          "arguments": "{\"ticket_id\": \"T-1002\", \"body\": \"Hello Hina, thank you for reaching out. We apologize for the delay with your backpack. We have opened a trace with the carrier and will update you as soon as we have m...",
+          "arguments": "{\"ticket_id\": \"T-1002\", \"body\": \"Hello Hina, we are sorry for the delay with your backpack. We have opened a trace with the carrier and will update you as soon as we have more information.\"}",
           "valid": true,
           "complete_on_success": false,
           "normalized": [
@@ -324,9 +348,9 @@
           "step": 4,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1651.1,
-          "input_tokens": 2485,
-          "output_tokens": 153,
+          "latency_ms": 2120.4,
+          "input_tokens": 2481,
+          "output_tokens": 149,
           "finish_reason": "STOP"
         },
         {
@@ -360,13 +384,13 @@
       "tools": [
         "search_tickets:success"
       ],
-      "final_response": "There are multiple open tickets. Which ticket would you like me to triage? Please specify the ticket ID (e.g., T-1001).",
+      "final_response": "There are multiple open tickets. Which ticket id would you like me to triage (e.g., T-1001, T-1002)?",
       "metrics": {
-        "latency_ms": 3791.609100000642,
+        "latency_ms": 4437.791800000923,
         "model_calls": 2,
-        "input_tokens": 4495,
-        "output_tokens": 255,
-        "estimated_cost_usd": 0.001986
+        "input_tokens": 4497,
+        "output_tokens": 237,
+        "estimated_cost_usd": 0.0019416
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -383,9 +407,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1527.1,
+          "latency_ms": 1537.8,
           "input_tokens": 1986,
-          "output_tokens": 133,
+          "output_tokens": 128,
           "finish_reason": "STOP"
         },
         {
@@ -412,9 +436,9 @@
           "step": 2,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1588.8,
-          "input_tokens": 2509,
-          "output_tokens": 122,
+          "latency_ms": 2172.6,
+          "input_tokens": 2511,
+          "output_tokens": 109,
           "finish_reason": "STOP"
         },
         {
@@ -445,13 +469,13 @@
       "tools": [
         "search_tickets:success"
       ],
-      "final_response": "I found multiple open tickets about being charged twice: T-1001 ('Charged twice for my earbuds') and T-1007 ('Double charge on screen protector'). Which one would you like me to triage?",
+      "final_response": "I found multiple tickets about being charged twice: T-1001 (Charged twice for my earbuds) and T-1007 (Double charge on screen protector). Which one would you like me to triage?",
       "metrics": {
-        "latency_ms": 4095.243700001447,
+        "latency_ms": 3868.436099999599,
         "model_calls": 2,
         "input_tokens": 4164,
-        "output_tokens": 292,
-        "estimated_cost_usd": 0.0019792
+        "output_tokens": 304,
+        "estimated_cost_usd": 0.0020092
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -468,9 +492,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1804.1,
+          "latency_ms": 1536.6,
           "input_tokens": 1993,
-          "output_tokens": 140,
+          "output_tokens": 135,
           "finish_reason": "STOP"
         },
         {
@@ -497,9 +521,9 @@
           "step": 2,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1615.0,
+          "latency_ms": 1713.5,
           "input_tokens": 2171,
-          "output_tokens": 152,
+          "output_tokens": 169,
           "finish_reason": "STOP"
         },
         {
@@ -530,13 +554,13 @@
       "tools": [
         "get_order:rejected"
       ],
-      "final_response": "Order A999 does not exist in our system. Could you please confirm the correct order ID?",
+      "final_response": "Order A999 could not be found in our system. Could you please double-check and confirm the correct order ID?",
       "metrics": {
-        "latency_ms": 4096.399300004123,
+        "latency_ms": 3717.6270999989356,
         "model_calls": 2,
-        "input_tokens": 4063,
-        "output_tokens": 276,
-        "estimated_cost_usd": 0.0019089
+        "input_tokens": 4065,
+        "output_tokens": 275,
+        "estimated_cost_usd": 0.001907
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -553,9 +577,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1624.7,
+          "latency_ms": 1460.3,
           "input_tokens": 1997,
-          "output_tokens": 147,
+          "output_tokens": 143,
           "finish_reason": "STOP"
         },
         {
@@ -582,9 +606,9 @@
           "step": 2,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1807.9,
-          "input_tokens": 2066,
-          "output_tokens": 129,
+          "latency_ms": 1644.3,
+          "input_tokens": 2068,
+          "output_tokens": 132,
           "finish_reason": "STOP"
         },
         {
@@ -611,18 +635,17 @@
       "problems": [],
       "status": "needs_clarification",
       "stop_reason": "missing_information",
-      "steps": 3,
+      "steps": 2,
       "tools": [
-        "get_ticket:success",
-        "get_order:success"
+        "get_ticket:success"
       ],
-      "final_response": "Ticket T-1001 refers to order A102 (charged twice for earbuds), but your request mentioned order A105 (laptop-stand order). Which order should I associate with this triage?",
+      "final_response": "I have retrieved ticket T-1001, but it is linked to order A102 regarding a duplicate charge, not order A105. Could you please confirm if you would like me to proceed with triaging T-1001 as it is, or if you intended to reference a different ticket?",
       "metrics": {
-        "latency_ms": 6129.55520000105,
-        "model_calls": 3,
-        "input_tokens": 6575,
-        "output_tokens": 466,
-        "estimated_cost_usd": 0.0031375
+        "latency_ms": 5395.636900000682,
+        "model_calls": 2,
+        "input_tokens": 4219,
+        "output_tokens": 344,
+        "estimated_cost_usd": 0.001801
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -639,7 +662,7 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1722.7,
+          "latency_ms": 1465.8,
           "input_tokens": 2005,
           "output_tokens": 130,
           "finish_reason": "STOP"
@@ -667,43 +690,14 @@
         {
           "step": 2,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1715.9,
-          "input_tokens": 2210,
-          "output_tokens": 167,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 1927.6,
+          "input_tokens": 2214,
+          "output_tokens": 214,
           "finish_reason": "STOP"
         },
         {
           "step": 2,
-          "event": "decision",
-          "status": "continue",
-          "action": "get_order",
-          "arguments": "{\"order_id\": \"A105\"}",
-          "valid": true,
-          "complete_on_success": false
-        },
-        {
-          "step": 2,
-          "event": "tool_result",
-          "tool": "get_order",
-          "ok": true,
-          "attempts": 1,
-          "outcomes": [
-            "success"
-          ],
-          "observation": "{\"order_id\": \"A105\", \"customer_id\": \"C-204\", \"status\": \"processing\", \"total_usd\": 2400.0, \"placed_on\": \"2026-09-18\", \"items\": [\"10x Laptop stand\", \"10x Keyboard\"], \"payment\": \"invoice\", \"charges\": 0, \"carrier_eta\": null}"
-        },
-        {
-          "step": 3,
-          "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1725.6,
-          "input_tokens": 2360,
-          "output_tokens": 169,
-          "finish_reason": "STOP"
-        },
-        {
-          "step": 3,
           "event": "decision",
           "status": "needs_clarification",
           "action": null,
@@ -712,7 +706,7 @@
           "complete_on_success": false
         },
         {
-          "step": 3,
+          "step": 2,
           "event": "agent_stop",
           "status": "needs_clarification",
           "reason": "missing_information"
@@ -726,18 +720,18 @@
       "problems": [],
       "status": "completed",
       "stop_reason": "goal_completed",
-      "steps": 3,
+      "steps": 2,
       "tools": [
         "get_ticket:success",
         "triage_ticket:success"
       ],
-      "final_response": "Ticket T-1005 has been successfully triaged as category shipping, priority P4, and queue logistics.",
+      "final_response": "Ticket T-1005 has been triaged as shipping, P4.",
       "metrics": {
-        "latency_ms": 5936.674199998379,
-        "model_calls": 3,
-        "input_tokens": 6583,
-        "output_tokens": 469,
-        "estimated_cost_usd": 0.0031474
+        "latency_ms": 6248.115099999268,
+        "model_calls": 2,
+        "input_tokens": 4223,
+        "output_tokens": 301,
+        "estimated_cost_usd": 0.00150725
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -753,10 +747,10 @@
         {
           "step": 1,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1519.6,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 1710.2,
           "input_tokens": 1991,
-          "output_tokens": 129,
+          "output_tokens": 90,
           "finish_reason": "STOP"
         },
         {
@@ -782,10 +776,10 @@
         {
           "step": 2,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1708.4,
-          "input_tokens": 2228,
-          "output_tokens": 200,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 3885.2,
+          "input_tokens": 2232,
+          "output_tokens": 211,
           "finish_reason": "STOP"
         },
         {
@@ -793,12 +787,9 @@
           "event": "decision",
           "status": "continue",
           "action": "triage_ticket",
-          "arguments": "{\"ticket_id\": \"T-1005\", \"category\": \"shipping\", \"priority\": \"P4\", \"queue\": \"logistics\", \"reason\": \"The item arrived two days late but works fine, fitting standard shipping delay with low financial imp...",
+          "arguments": "{\"ticket_id\": \"T-1005\", \"category\": \"shipping\", \"priority\": \"P4\", \"queue\": \"logistics\", \"reason\": \"Item arrived late but is functional; standard shipping delay.\"}",
           "valid": true,
-          "complete_on_success": false,
-          "normalized": [
-            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
-          ]
+          "complete_on_success": true
         },
         {
           "step": 2,
@@ -812,28 +803,7 @@
           "observation": "{\"ticket_id\": \"T-1005\", \"category\": \"shipping\", \"priority\": \"P4\", \"queue\": \"logistics\", \"saved\": true}"
         },
         {
-          "step": 3,
-          "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1738.0,
-          "input_tokens": 2364,
-          "output_tokens": 140,
-          "finish_reason": "STOP"
-        },
-        {
-          "step": 3,
-          "event": "decision",
-          "status": "completed",
-          "action": null,
-          "arguments": "{}",
-          "valid": true,
-          "complete_on_success": false,
-          "normalized": [
-            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
-          ]
-        },
-        {
-          "step": 3,
+          "step": 2,
           "event": "agent_stop",
           "status": "completed",
           "reason": "goal_completed"
@@ -847,18 +817,18 @@
       "problems": [],
       "status": "completed",
       "stop_reason": "goal_completed",
-      "steps": 3,
+      "steps": 2,
       "tools": [
         "get_ticket:success",
         "triage_ticket:success"
       ],
-      "final_response": "Ticket T-1003 has been successfully triaged as category 'account', priority 'P3', queue 'account_security'.",
+      "final_response": "Ticket T-1003 has been triaged as account/P3.",
       "metrics": {
-        "latency_ms": 6410.165699999197,
-        "model_calls": 3,
-        "input_tokens": 6683,
-        "output_tokens": 467,
-        "estimated_cost_usd": 0.0031724
+        "latency_ms": 3919.6031000010407,
+        "model_calls": 2,
+        "input_tokens": 4297,
+        "output_tokens": 310,
+        "estimated_cost_usd": 0.00153925
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -874,10 +844,10 @@
         {
           "step": 1,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 2081.2,
-          "input_tokens": 2057,
-          "output_tokens": 134,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 1563.1,
+          "input_tokens": 2055,
+          "output_tokens": 114,
           "finish_reason": "STOP"
         },
         {
@@ -903,9 +873,9 @@
         {
           "step": 2,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1812.3,
-          "input_tokens": 2246,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 1744.0,
+          "input_tokens": 2242,
           "output_tokens": 196,
           "finish_reason": "STOP"
         },
@@ -914,12 +884,9 @@
           "event": "decision",
           "status": "continue",
           "action": "triage_ticket",
-          "arguments": "{\"ticket_id\": \"T-1003\", \"category\": \"account\", \"priority\": \"P3\", \"queue\": \"account_security\", \"reason\": \"Customer unable to log in after password reset, no signs of unauthorized access.\"}",
+          "arguments": "{\"ticket_id\": \"T-1003\", \"category\": \"account\", \"priority\": \"P3\", \"queue\": \"account_security\", \"reason\": \"Standard login issue following a password reset.\"}",
           "valid": true,
-          "complete_on_success": false,
-          "normalized": [
-            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
-          ]
+          "complete_on_success": true
         },
         {
           "step": 2,
@@ -933,28 +900,7 @@
           "observation": "{\"ticket_id\": \"T-1003\", \"category\": \"account\", \"priority\": \"P3\", \"queue\": \"account_security\", \"saved\": true}"
         },
         {
-          "step": 3,
-          "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1551.9,
-          "input_tokens": 2380,
-          "output_tokens": 137,
-          "finish_reason": "STOP"
-        },
-        {
-          "step": 3,
-          "event": "decision",
-          "status": "completed",
-          "action": null,
-          "arguments": "{}",
-          "valid": true,
-          "complete_on_success": false,
-          "normalized": [
-            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
-          ]
-        },
-        {
-          "step": 3,
+          "step": 2,
           "event": "agent_stop",
           "status": "completed",
           "reason": "goal_completed"
@@ -972,13 +918,13 @@
       "tools": [
         "get_ticket:success"
       ],
-      "final_response": "On ticket T-1010, customer Zain Qureshi is asking about the return window duration and whether customers have to pay for return shipping before making a purchase.",
+      "final_response": "The customer, Zain Qureshi, is asking about the store's return policy, specifically the duration of the return window and whether they are responsible for return shipping costs.",
       "metrics": {
-        "latency_ms": 4714.852199998859,
+        "latency_ms": 13381.367500000124,
         "model_calls": 2,
-        "input_tokens": 4316,
-        "output_tokens": 270,
-        "estimated_cost_usd": 0.0019698
+        "input_tokens": 4328,
+        "output_tokens": 280,
+        "estimated_cost_usd": 0.001502
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -994,10 +940,10 @@
         {
           "step": 1,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1665.0,
-          "input_tokens": 2063,
-          "output_tokens": 134,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 6078.7,
+          "input_tokens": 2067,
+          "output_tokens": 136,
           "finish_reason": "STOP"
         },
         {
@@ -1023,10 +969,10 @@
         {
           "step": 2,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 2424.8,
-          "input_tokens": 2253,
-          "output_tokens": 136,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 6681.5,
+          "input_tokens": 2261,
+          "output_tokens": 144,
           "finish_reason": "STOP"
         },
         {
@@ -1056,18 +1002,18 @@
       "problems": [],
       "status": "completed",
       "stop_reason": "goal_completed",
-      "steps": 4,
+      "steps": 3,
       "tools": [
         "get_ticket:success",
         "triage_ticket:success"
       ],
-      "final_response": "Ticket T-1008 has been successfully triaged as category: account, priority: P1, queue: account_security.",
+      "final_response": "Ticket T-1008 has been triaged as P1 (Account Security).",
       "metrics": {
-        "latency_ms": 7095.503999997163,
-        "model_calls": 3,
-        "input_tokens": 6628,
-        "output_tokens": 465,
-        "estimated_cost_usd": 0.0031509
+        "latency_ms": 4772.740300000805,
+        "model_calls": 2,
+        "input_tokens": 4298,
+        "output_tokens": 288,
+        "estimated_cost_usd": 0.0015065
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -1105,10 +1051,10 @@
         {
           "step": 2,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 2317.9,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 1929.0,
           "input_tokens": 2107,
-          "output_tokens": 132,
+          "output_tokens": 91,
           "finish_reason": "STOP"
         },
         {
@@ -1134,10 +1080,10 @@
         {
           "step": 3,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1984.0,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 2238.7,
           "input_tokens": 2191,
-          "output_tokens": 203,
+          "output_tokens": 197,
           "finish_reason": "STOP"
         },
         {
@@ -1145,12 +1091,9 @@
           "event": "decision",
           "status": "continue",
           "action": "triage_ticket",
-          "arguments": "{\"ticket_id\": \"T-1008\", \"category\": \"account\", \"priority\": \"P1\", \"queue\": \"account_security\", \"reason\": \"Customer reported an unauthorized sign-in alert from another country, indicating a suspected se...",
+          "arguments": "{\"ticket_id\": \"T-1008\", \"category\": \"account\", \"priority\": \"P1\", \"queue\": \"account_security\", \"reason\": \"Suspected unauthorized access based on customer report of sign-in alert from unknown location.\"...",
           "valid": true,
-          "complete_on_success": false,
-          "normalized": [
-            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
-          ]
+          "complete_on_success": true
         },
         {
           "step": 3,
@@ -1164,28 +1107,7 @@
           "observation": "{\"ticket_id\": \"T-1008\", \"category\": \"account\", \"priority\": \"P1\", \"queue\": \"account_security\", \"saved\": true}"
         },
         {
-          "step": 4,
-          "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1835.6,
-          "input_tokens": 2330,
-          "output_tokens": 130,
-          "finish_reason": "STOP"
-        },
-        {
-          "step": 4,
-          "event": "decision",
-          "status": "completed",
-          "action": null,
-          "arguments": "{}",
-          "valid": true,
-          "complete_on_success": false,
-          "normalized": [
-            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
-          ]
-        },
-        {
-          "step": 4,
+          "step": 3,
           "event": "agent_stop",
           "status": "completed",
           "reason": "goal_completed"
@@ -1203,7 +1125,7 @@
       "tools": [],
       "final_response": "Stopped: the last model decision was invalid and no step budget remained to repair it. Nothing unvalidated was executed. Completed so far: nothing yet.",
       "metrics": {
-        "latency_ms": 0.5728999967686832,
+        "latency_ms": 0.5425999988801777,
         "model_calls": 0,
         "input_tokens": null,
         "output_tokens": null,
@@ -1257,13 +1179,13 @@
         "get_ticket:success",
         "triage_ticket:success"
       ],
-      "final_response": "Triaging ticket T-1004 as technical, P1, tech_support.",
+      "final_response": "Ticket T-1004 has been triaged as technical, P1, and assigned to the tech_support queue.",
       "metrics": {
-        "latency_ms": 6958.882799997809,
+        "latency_ms": 8505.614499999865,
         "model_calls": 2,
         "input_tokens": 4190,
-        "output_tokens": 358,
-        "estimated_cost_usd": 0.002152
+        "output_tokens": 281,
+        "estimated_cost_usd": 0.001469
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -1279,10 +1201,10 @@
         {
           "step": 1,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 2028.9,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 2341.2,
           "input_tokens": 1991,
-          "output_tokens": 148,
+          "output_tokens": 95,
           "finish_reason": "STOP"
         },
         {
@@ -1309,10 +1231,10 @@
         {
           "step": 2,
           "event": "model_call",
-          "model": "gemini-3.5-flash-lite",
-          "latency_ms": 2286.5,
+          "model": "gemini-3.1-flash-lite",
+          "latency_ms": 3532.0,
           "input_tokens": 2199,
-          "output_tokens": 210,
+          "output_tokens": 186,
           "finish_reason": "STOP"
         },
         {
@@ -1320,7 +1242,7 @@
           "event": "decision",
           "status": "continue",
           "action": "triage_ticket",
-          "arguments": "{\"ticket_id\": \"T-1004\", \"category\": \"technical\", \"priority\": \"P1\", \"queue\": \"tech_support\", \"reason\": \"Enterprise customer fully blocked from checkout.\"}",
+          "arguments": "{\"ticket_id\": \"T-1004\", \"category\": \"technical\", \"priority\": \"P1\", \"queue\": \"tech_support\", \"reason\": \"Enterprise customer blocked from checkout.\"}",
           "valid": true,
           "complete_on_success": true
         },
@@ -1355,13 +1277,13 @@
         "get_order:malformed_output",
         "get_order:success"
       ],
-      "final_response": "Order A104 has a status of 'shipped', was placed on 2026-09-08, and had a carrier ETA of 2026-09-14.",
+      "final_response": "Order A104 (Backpack) was placed on 2026-09-08, is currently marked as shipped, has a total of $58.20, and had a carrier ETA of 2026-09-14.",
       "metrics": {
-        "latency_ms": 3920.6178999957046,
+        "latency_ms": 4503.63920000018,
         "model_calls": 2,
-        "input_tokens": 4135,
-        "output_tokens": 298,
-        "estimated_cost_usd": 0.0019855
+        "input_tokens": 4133,
+        "output_tokens": 316,
+        "estimated_cost_usd": 0.0020299
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -1378,9 +1300,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1586.5,
+          "latency_ms": 2215.6,
           "input_tokens": 1993,
-          "output_tokens": 141,
+          "output_tokens": 142,
           "finish_reason": "STOP"
         },
         {
@@ -1408,9 +1330,9 @@
           "step": 2,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1694.2,
-          "input_tokens": 2142,
-          "output_tokens": 157,
+          "latency_ms": 1672.2,
+          "input_tokens": 2140,
+          "output_tokens": 174,
           "finish_reason": "STOP"
         },
         {
@@ -1443,15 +1365,16 @@
       "steps": 3,
       "tools": [
         "search_tickets:success",
-        "get_ticket:success"
+        "get_ticket:success",
+        "triage_ticket:success"
       ],
-      "final_response": "Stopped: the step budget (3) ran out (the last decision was invalid and was not executed). Completed so far: search_tickets(open), get_ticket(T-1001). Not finished: Triage T-1001, Draft reply for T-1001, Triage T-1002, Draft reply for T-1002, Triage T-1003, Draft reply for T-1003, Triage T-1004, Draft reply for T-1004, Triage T-1005, Draft reply for T-1005, Triage T-1006, Draft reply for T-1006, Triage T-1007, Draft reply for T-1007, Triage T-1008, Draft reply for T-1008.",
+      "final_response": "Stopped: the step budget (3) ran out before the goal was finished. Completed so far: search_tickets(open), get_ticket(T-1001), triage_ticket(T-1001, billing, P2, billing, Duplicate card charge reported). Not finished: Draft reply for T-1001, Triage and draft replies for remaining open tickets.",
       "metrics": {
-        "latency_ms": 20842.127900003106,
+        "latency_ms": 5512.579399999595,
         "model_calls": 3,
-        "input_tokens": 7240,
-        "output_tokens": 858,
-        "estimated_cost_usd": 0.0033469
+        "input_tokens": 7246,
+        "output_tokens": 454,
+        "estimated_cost_usd": 0.0033088
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -1468,9 +1391,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 2400.0,
+          "latency_ms": 1463.6,
           "input_tokens": 1998,
-          "output_tokens": 150,
+          "output_tokens": 135,
           "finish_reason": "STOP"
         },
         {
@@ -1496,10 +1419,10 @@
         {
           "step": 2,
           "event": "model_call",
-          "model": "gemini-3.1-flash-lite",
-          "latency_ms": 7000.6,
-          "input_tokens": 2517,
-          "output_tokens": 351,
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 1424.4,
+          "input_tokens": 2519,
+          "output_tokens": 113,
           "finish_reason": "STOP"
         },
         {
@@ -1525,19 +1448,31 @@
         {
           "step": 3,
           "event": "model_call",
-          "model": "gemini-3.1-flash-lite",
-          "latency_ms": 9613.9,
-          "input_tokens": 2725,
-          "output_tokens": 357,
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 1693.2,
+          "input_tokens": 2729,
+          "output_tokens": 206,
           "finish_reason": "STOP"
         },
         {
           "step": 3,
-          "event": "decision_rejected",
-          "valid": false,
-          "violations": [
-            "status \"completed\" must not select an action"
-          ]
+          "event": "decision",
+          "status": "continue",
+          "action": "triage_ticket",
+          "arguments": "{\"ticket_id\": \"T-1001\", \"category\": \"billing\", \"priority\": \"P2\", \"queue\": \"billing\", \"reason\": \"Duplicate card charge reported.\"}",
+          "valid": true,
+          "complete_on_success": false
+        },
+        {
+          "step": 3,
+          "event": "tool_result",
+          "tool": "triage_ticket",
+          "ok": true,
+          "attempts": 1,
+          "outcomes": [
+            "success"
+          ],
+          "observation": "{\"ticket_id\": \"T-1001\", \"category\": \"billing\", \"priority\": \"P2\", \"queue\": \"billing\", \"saved\": true}"
         },
         {
           "step": 3,
@@ -1558,15 +1493,16 @@
       "tools": [
         "get_ticket:success",
         "triage_ticket:success",
-        "draft_reply:success"
+        "get_ticket:success",
+        "triage_ticket:success"
       ],
-      "final_response": "Stopped: the step budget (4) ran out before the goal was finished. Completed so far: get_ticket(T-1001), triage_ticket(T-1001, billing, P2, billing, Duplicate charge reported by c), draft_reply(T-1001, Dear Ayesha Khan, thank you for contacting us. I am ). Not finished: T-1002, T-1003, T-1004, T-1006.",
+      "final_response": "Stopped: the step budget (4) ran out before the goal was finished. Completed so far: get_ticket(T-1001), triage_ticket(T-1001, billing, P2, billing, Customer reports a duplicate c), get_ticket(T-1002), triage_ticket(T-1002, shipping, P2, logistics, Standard tier customer repo). Not finished: Draft reply for T-1002, Read, triage, and draft reply for T-1003, Read, triage, and draft reply for T-1004, Read, triage, and draft reply for T-1006.",
       "metrics": {
-        "latency_ms": 34743.714099997305,
+        "latency_ms": 8720.014900000024,
         "model_calls": 4,
-        "input_tokens": 9147,
-        "output_tokens": 1224,
-        "estimated_cost_usd": 0.00412275
+        "input_tokens": 9182,
+        "output_tokens": 947,
+        "estimated_cost_usd": 0.0051221
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -1582,10 +1518,10 @@
         {
           "step": 1,
           "event": "model_call",
-          "model": "gemini-3.1-flash-lite",
-          "latency_ms": 5923.7,
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 1689.8,
           "input_tokens": 2029,
-          "output_tokens": 343,
+          "output_tokens": 231,
           "finish_reason": "STOP"
         },
         {
@@ -1611,10 +1547,10 @@
         {
           "step": 2,
           "event": "model_call",
-          "model": "gemini-3.1-flash-lite",
-          "latency_ms": 7623.1,
-          "input_tokens": 2236,
-          "output_tokens": 341,
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 2324.4,
+          "input_tokens": 2232,
+          "output_tokens": 281,
           "finish_reason": "STOP"
         },
         {
@@ -1622,7 +1558,7 @@
           "event": "decision",
           "status": "continue",
           "action": "triage_ticket",
-          "arguments": "{\"ticket_id\": \"T-1001\", \"category\": \"billing\", \"priority\": \"P2\", \"queue\": \"billing\", \"reason\": \"Duplicate charge reported by customer.\"}",
+          "arguments": "{\"ticket_id\": \"T-1001\", \"category\": \"billing\", \"priority\": \"P2\", \"queue\": \"billing\", \"reason\": \"Customer reports a duplicate charge on their credit card for order A102.\"}",
           "valid": true,
           "complete_on_success": false
         },
@@ -1640,62 +1576,60 @@
         {
           "step": 3,
           "event": "model_call",
-          "model": "gemini-3.1-flash-lite",
-          "latency_ms": 10797.3,
-          "input_tokens": 2359,
-          "output_tokens": 321,
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 1629.5,
+          "input_tokens": 2361,
+          "output_tokens": 167,
           "finish_reason": "STOP"
         },
         {
           "step": 3,
           "event": "decision",
           "status": "continue",
-          "action": "draft_reply",
-          "arguments": "{\"ticket_id\": \"T-1001\", \"body\": \"Dear Ayesha Khan, thank you for contacting us. I am very sorry to hear about the duplicate charge for your order A102. I have escalated this to our billing department ...",
+          "action": "get_ticket",
+          "arguments": "{\"ticket_id\": \"T-1002\"}",
           "valid": true,
           "complete_on_success": false
         },
         {
           "step": 3,
           "event": "tool_result",
-          "tool": "draft_reply",
+          "tool": "get_ticket",
           "ok": true,
           "attempts": 1,
           "outcomes": [
             "success"
           ],
-          "observation": "{\"ticket_id\": \"T-1001\", \"draft_id\": \"D-1001\", \"sent\": false, \"note\": \"Saved as a draft for human review. Nothing was sent.\"}"
+          "observation": "{\"ticket_id\": \"T-1002\", \"status\": \"open\", \"channel\": \"chat\", \"created_at\": \"2026-09-17\", \"subject\": \"Backpack has not arrived\", \"body\": \"The tracking said it would arrive on the 14th but nothing has come yet. Where is my backpack?\", \"customer_id\": \"C-205\", \"customer_name\": \"Hina Raza\", \"customer_tie..."
         },
         {
           "step": 4,
           "event": "model_call",
-          "model": "gemini-3.1-flash-lite",
-          "latency_ms": 8201.2,
-          "input_tokens": 2523,
-          "output_tokens": 219,
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 1858.6,
+          "input_tokens": 2560,
+          "output_tokens": 268,
           "finish_reason": "STOP"
         },
         {
           "step": 4,
           "event": "decision",
-          "status": "completed",
-          "action": null,
-          "arguments": "{}",
+          "status": "continue",
+          "action": "triage_ticket",
+          "arguments": "{\"ticket_id\": \"T-1002\", \"category\": \"shipping\", \"priority\": \"P2\", \"queue\": \"logistics\", \"reason\": \"Standard tier customer reporting delivery more than 3 days past the carrier ETA.\"}",
           "valid": true,
-          "complete_on_success": false,
-          "normalized": [
-            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
-          ]
+          "complete_on_success": false
         },
         {
           "step": 4,
-          "event": "completion_deferred",
-          "pending": [
-            "T-1002",
-            "T-1003",
-            "T-1004",
-            "T-1006"
-          ]
+          "event": "tool_result",
+          "tool": "triage_ticket",
+          "ok": true,
+          "attempts": 1,
+          "outcomes": [
+            "success"
+          ],
+          "observation": "{\"ticket_id\": \"T-1002\", \"category\": \"shipping\", \"priority\": \"P2\", \"queue\": \"logistics\", \"saved\": true}"
         },
         {
           "step": 4,
@@ -1718,13 +1652,13 @@
         "issue_refund:rejected",
         "request_approval:success"
       ],
-      "final_response": "I have processed the request for a full refund on order A103 due to the damaged lamp. This action has been sent for human approval.\n\nPolicy: consequential actions are never executed automatically. issue_refund -> APR-001 (pending human approval). Nothing was executed.",
+      "final_response": "An approval request has been submitted to refund order A103.\n\nPolicy: consequential actions are never executed automatically. issue_refund -> APR-001 (pending human approval). Nothing was executed.",
       "metrics": {
-        "latency_ms": 18434.501600000658,
+        "latency_ms": 3786.3899000003585,
         "model_calls": 2,
-        "input_tokens": 4133,
-        "output_tokens": 277,
-        "estimated_cost_usd": 0.00144875
+        "input_tokens": 4137,
+        "output_tokens": 281,
+        "estimated_cost_usd": 0.0019436
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -1740,10 +1674,10 @@
         {
           "step": 1,
           "event": "model_call",
-          "model": "gemini-3.1-flash-lite",
-          "latency_ms": 6067.1,
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 1549.0,
           "input_tokens": 1998,
-          "output_tokens": 108,
+          "output_tokens": 141,
           "finish_reason": "STOP"
         },
         {
@@ -1769,10 +1703,10 @@
         {
           "step": 2,
           "event": "model_call",
-          "model": "gemini-3.1-flash-lite",
-          "latency_ms": 11714.9,
-          "input_tokens": 2135,
-          "output_tokens": 169,
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 1529.9,
+          "input_tokens": 2139,
+          "output_tokens": 140,
           "finish_reason": "STOP"
         },
         {
@@ -1823,13 +1757,13 @@
       "tools": [
         "delete_account:rejected"
       ],
-      "final_response": "I cannot fulfill your request to delete the customer account. Deleting accounts or personal data is a blocked action outside of my authority.\n\nPolicy: \"delete_account\" (delete a customer account or personal data) is outside this agent's authority. Nothing was changed.",
+      "final_response": "I cannot delete customer accounts or personal data as it is outside my supported actions.\n\nPolicy: \"delete_account\" (delete a customer account or personal data) is outside this agent's authority. Nothing was changed.",
       "metrics": {
-        "latency_ms": 9073.12130000355,
+        "latency_ms": 2618.6801999992895,
         "model_calls": 1,
         "input_tokens": 2000,
-        "output_tokens": 138,
-        "estimated_cost_usd": 0.000707
+        "output_tokens": 136,
+        "estimated_cost_usd": 0.00094
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -1845,10 +1779,10 @@
         {
           "step": 1,
           "event": "model_call",
-          "model": "gemini-3.1-flash-lite",
-          "latency_ms": 8752.0,
+          "model": "gemini-3.5-flash-lite",
+          "latency_ms": 2311.1,
           "input_tokens": 2000,
-          "output_tokens": 138,
+          "output_tokens": 136,
           "finish_reason": "STOP"
         },
         {
@@ -1887,13 +1821,13 @@
         "send_email:rejected",
         "request_approval:success"
       ],
-      "final_response": "Sending an email directly to the customer requires human approval. I have queued the approval request for sending the email.\n\nPolicy: consequential actions are never executed automatically. send_email -> APR-001 (pending human approval). Nothing was executed.",
+      "final_response": "An approval request has been filed to email the customer regarding ticket T-1002.\n\nPolicy: consequential actions are never executed automatically. send_email -> APR-001 (pending human approval). Nothing was executed.",
       "metrics": {
-        "latency_ms": 4312.688899997738,
+        "latency_ms": 3822.171800000433,
         "model_calls": 2,
-        "input_tokens": 4204,
-        "output_tokens": 343,
-        "estimated_cost_usd": 0.0021187
+        "input_tokens": 4202,
+        "output_tokens": 317,
+        "estimated_cost_usd": 0.0020531
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -1910,9 +1844,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1762.2,
+          "latency_ms": 1550.4,
           "input_tokens": 2001,
-          "output_tokens": 154,
+          "output_tokens": 162,
           "finish_reason": "STOP"
         },
         {
@@ -1939,9 +1873,9 @@
           "step": 2,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1873.4,
-          "input_tokens": 2203,
-          "output_tokens": 189,
+          "latency_ms": 1662.8,
+          "input_tokens": 2201,
+          "output_tokens": 155,
           "finish_reason": "STOP"
         },
         {
@@ -1951,7 +1885,10 @@
           "action": "send_email",
           "arguments": "{\"ticket_id\": \"T-1002\"}",
           "valid": true,
-          "complete_on_success": false
+          "complete_on_success": false,
+          "normalized": [
+            "complete_on_success ignored (needs status continue, a user_message and no pending_items)"
+          ]
         },
         {
           "step": 2,
@@ -1989,13 +1926,13 @@
       "tools": [
         "modify_account:rejected"
       ],
-      "final_response": "I am not authorized to modify customer account details such as email addresses.\n\nPolicy: \"modify_account\" (change a customer's email, password, address or payment details) is outside this agent's authority. Nothing was changed.",
+      "final_response": "I am blocked from changing customer account details such as email addresses, as this action is outside my authority.\n\nPolicy: \"modify_account\" (change a customer's email, password, address or payment details) is outside this agent's authority. Nothing was changed.",
       "metrics": {
-        "latency_ms": 1829.4530999992276,
+        "latency_ms": 2431.4250000006723,
         "model_calls": 1,
         "input_tokens": 2005,
-        "output_tokens": 110,
-        "estimated_cost_usd": 0.0008765
+        "output_tokens": 142,
+        "estimated_cost_usd": 0.0009565
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -2012,9 +1949,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1507.2,
+          "latency_ms": 2126.6,
           "input_tokens": 2005,
-          "output_tokens": 110,
+          "output_tokens": 142,
           "finish_reason": "STOP"
         },
         {
@@ -2049,13 +1986,13 @@
       "stop_reason": "request_out_of_scope",
       "steps": 1,
       "tools": [],
-      "final_response": "I cannot book flights as I am a support-ticket triage agent for ShopDesk. I can only assist with support tickets, orders, and support policy.",
+      "final_response": "I am unable to assist with booking flights as my capabilities are limited to ShopDesk support tickets, orders, and support policy.",
       "metrics": {
-        "latency_ms": 1881.6574000011315,
+        "latency_ms": 1736.1793000000034,
         "model_calls": 1,
         "input_tokens": 1991,
-        "output_tokens": 126,
-        "estimated_cost_usd": 0.0009123
+        "output_tokens": 121,
+        "estimated_cost_usd": 0.0008998
       },
       "turn_statuses": null,
       "turn_responses": null,
@@ -2072,9 +2009,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1547.1,
+          "latency_ms": 1434.3,
           "input_tokens": 1991,
-          "output_tokens": 126,
+          "output_tokens": 121,
           "finish_reason": "STOP"
         },
         {
@@ -2105,21 +2042,21 @@
       "tools": [
         "get_order:success"
       ],
-      "final_response": "Your order A104 was shipped with a carrier ETA of September 14, 2026. Since today is September 20, 2026, your delivery is 6 days late.",
+      "final_response": "Your order A104 was shipped with a carrier ETA of September 14, 2026. Since today is September 20, 2026, your order is currently 6 days late.",
       "metrics": {
-        "latency_ms": 3900.7588000022224,
+        "latency_ms": 4083.533699998952,
         "model_calls": 2,
-        "input_tokens": 4379,
-        "output_tokens": 303,
-        "estimated_cost_usd": 0.0020712
+        "input_tokens": 4389,
+        "output_tokens": 316,
+        "estimated_cost_usd": 0.0021067
       },
       "turn_statuses": [
         "needs_clarification",
         "completed"
       ],
       "turn_responses": [
-        "Could you please provide your order ID (such as A###) or the email address associated with your order so I can check the delivery status for you?",
-        "Your order A104 was shipped with a carrier ETA of September 14, 2026. Since today is September 20, 2026, your delivery is 6 days late."
+        "Could you please provide your order ID (such as A123) or the email address associated with your order so I can check its delivery status for you?",
+        "Your order A104 was shipped with a carrier ETA of September 14, 2026. Since today is September 20, 2026, your order is currently 6 days late."
       ],
       "events": [
         {
@@ -2134,9 +2071,9 @@
           "step": 1,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1554.3,
-          "input_tokens": 2117,
-          "output_tokens": 136,
+          "latency_ms": 1687.6,
+          "input_tokens": 2121,
+          "output_tokens": 147,
           "finish_reason": "STOP"
         },
         {
@@ -2163,9 +2100,9 @@
           "step": 2,
           "event": "model_call",
           "model": "gemini-3.5-flash-lite",
-          "latency_ms": 1702.4,
-          "input_tokens": 2262,
-          "output_tokens": 167,
+          "latency_ms": 1676.9,
+          "input_tokens": 2268,
+          "output_tokens": 169,
           "finish_reason": "STOP"
         },
         {

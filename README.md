@@ -166,13 +166,13 @@ payload so a malformed dependency response is detected.
 | `MAX_TOOL_RETRIES` | 2 | Retries for timeouts / malformed output / exceptions (3 attempts max) |
 | `MAX_DECISION_REPAIRS` | 2 | Consecutive invalid decisions tolerated |
 | `TOOL_TIMEOUT_SECONDS` | 2 | Per tool attempt |
-| `MODEL_TIMEOUT_SECONDS` | 15 | Per model call (also capped by remaining run time) |
+| `MODEL_TIMEOUT_SECONDS` | 20 | Per model call, including fallbacks (also capped by remaining run time) |
 | `RUN_TIMEOUT_SECONDS` | 40 | Hard wrapper timeout; the agent stops itself 3 s earlier so the trace is kept |
 | `MAX_OUTPUT_TOKENS` | 768 | Per model call (includes any thinking tokens); `GEMINI_THINKING_LEVEL=minimal` |
 | `MAX_RUN_TOKENS` | 40 000 | Input + output tokens per run |
 | `MAX_HISTORY_MESSAGES` | 12 | Chat messages put in the prompt (6 turns) |
 | `MAX_CONCURRENT_RUNS` / `MAX_DAILY_RUNS` / `CHAT_REQUESTS_PER_MINUTE` | 4 / 2000 / 12 | Admission control so a public URL cannot run up provider cost |
-| `MODEL_FALLBACKS` | `gemini-3.1-flash-lite` | Models tried in order when the selected model returns 429/5xx |
+| `MODEL_FALLBACKS` | `gemini-3.1-flash-lite,gemini-3.7-flash,gemini-3.8-flash` | Models (separate free-tier quotas) tried in order when the selected model returns 429/5xx |
 
 ## 7. Arena fault handling
 
@@ -269,17 +269,25 @@ token counts × list price in [app/config.py](app/config.py) (null when unknown)
 - **Context window.** Prompts are about 1.6–2.5k input tokens per decision (≈ 4k per run). That's tiny compared
   with any of these models' windows, so context size didn't decide anything; the bounded history (12 messages)
   and truncated observations keep it that way.
-- **Quota → fallback chain.** Free-tier keys have per-minute and per-day limits *per model* (3.6 flash: 20
-  requests/day), and the fast public suite does trigger HTTP 429 on 3.5 flash-lite. `MODEL_FALLBACKS` therefore
-  routes a call that gets 429/5xx to `gemini-3.1-flash-lite`. That model has a separate quota and was equally
-  accurate. The throttled model is skipped for its `retryDelay` cooldown ([app/llm.py](app/llm.py),
-  `FallbackClient`). In the final suite run, 9 of 48 model calls were served by the fallback, and no case failed
-  with `model_unavailable`.
+- **Quota → fallback chain (free tier only).** This project must run on a free-tier key, which has per-minute
+  and per-day limits *per model* (3.6 flash: 20 requests/day). The fast public suite does trigger HTTP 429 on
+  3.5 flash-lite. `MODEL_FALLBACKS` therefore chains models with **separate quotas**:
+  `3.5-flash-lite → 3.1-flash-lite → 3.7-flash → 3.8-flash` ([app/llm.py](app/llm.py), `FallbackClient`).
+  - A 429/5xx hands the call to the next model straight away, and the throttled model is skipped for its
+    `retryDelay` cooldown.
+  - If every model is cooling down, the client waits for the first quota to return, but only while a call can
+    still fit inside the run deadline. Otherwise it stops with `failed / model_unavailable`.
+  - Models that reject the `minimal` thinking level are retried at `low` (3.7/3.8 flash).
+  - 3.1 flash-lite was equally accurate in the experiment. The 3.7/3.8 flash fallbacks were spot-checked live:
+    the injected ticket was triaged correctly and the refund went to approval. They are slower (6–15 s per
+    call), so they are last resorts.
+  - In the final suite run (22/22, 5.0 s average, 13.4 s worst), 11 of 45 model calls were served by
+    3.1 flash-lite, and no case failed with `model_unavailable`.
 
 The UI selector also offers `gemini-3.1-flash-lite` and `gemini-3.6-flash` (allow-listed via `AVAILABLE_MODELS`).
 
 **Cost controls per run:** ≤6 decisions, ≤768 output tokens each (thinking at `minimal`), ≤12 history messages,
-≤40 000 tokens total, ≤2 repairs and ≤2 tool retries, 15 s per model call, 40 s per run. Admission control on top
+≤40 000 tokens total, ≤2 repairs and ≤2 tool retries, 20 s per model call, 40 s per run. Admission control on top
 of that: 4 concurrent runs, 2 000 runs per day, 12 chat requests per minute per client.
 
 ## 10. Evaluation evidence
@@ -329,7 +337,7 @@ Example Arena request:
    - Health check path: `/health`
 3. Environment: `PYTHON_VERSION=3.12.10`, `MODEL_PROVIDER=gemini`, `MODEL_NAME=gemini-3.5-flash-lite`,
    `AVAILABLE_MODELS=gemini-3.5-flash-lite,gemini-3.1-flash-lite,gemini-3.6-flash`,
-   `MODEL_FALLBACKS=gemini-3.1-flash-lite`, and **`GEMINI_API_KEY` as a secret**. Never commit it.
+   `MODEL_FALLBACKS=gemini-3.1-flash-lite,gemini-3.7-flash,gemini-3.8-flash`, `MODEL_TIMEOUT_SECONDS=20`, and **`GEMINI_API_KEY` as a secret**. Never commit it.
 4. Verify from outside: open `/` in a private window, `GET /health`, `GET /arena/manifest`, and a
    `POST /arena/run` through `/docs`; then run `run_public_tests.py --url https://<app>.onrender.com --label deployed`.
 
@@ -348,10 +356,10 @@ git archive --format=zip --prefix=i221234/ -o ..\i221234.zip HEAD
 
 - **Free hosting:** Render free instances sleep after inactivity. The first request can take about 30–60 s
   (cold start), and memory is wiped on restart.
-- **Provider quotas:** Gemini free-tier rate and daily limits can return 429. The fallback model absorbs short
-  bursts, but if every model in the chain is throttled, the run stops with `failed / model_unavailable`. Runs
-  served by the slower fallback can also end `budget_exceeded / time_budget_reached` on long tasks. A key with
-  billing enabled (≈ $0.002 per run) avoids both during evaluation.
+- **Provider quotas (free tier):** the fallback chain absorbs bursts, but if all four models are throttled for
+  longer than the run deadline, the run stops with `failed / model_unavailable`. Runs served by the slower
+  flash fallbacks can end `budget_exceeded / time_budget_reached` on long tasks. Paid quota would remove this,
+  but the course requires free-tier keys.
 - **Model judgement:** priority/category quality and injection resistance still depend on the model. The code
   guarantees safety properties (nothing consequential executes, ids are grounded, no ungrounded completion), not
   perfect triage.

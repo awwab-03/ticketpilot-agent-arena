@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     max_run_tokens: int = Field(default=40000, ge=1000)
     max_history_messages: int = Field(default=12, ge=0, le=12)
     run_timeout_seconds: float = Field(default=40, gt=0, le=40)
-    model_timeout_seconds: float = Field(default=15, gt=0, le=30)
+    model_timeout_seconds: float = Field(default=20, gt=0, le=30)
     tool_timeout_seconds: float = Field(default=2, gt=0, le=10)
     max_concurrent_runs: int = Field(default=4, ge=1, le=32)
     chat_requests_per_minute: int = Field(default=12, ge=1)
